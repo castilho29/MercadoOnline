@@ -35,7 +35,7 @@ export default function EntregadorPage() {
       .select(`
         id, status, total, criado_em, forma_pagamento, troco_para,
         itens_pedido(id, quantidade, produtos(nome)),
-        enderecos(rua, numero, bairro, cidade, cep)
+        enderecos(rua, numero, bairro, cidade, cep, latitude, longitude)
       `)
       .eq('entregador_id', meuRegistro.id)
       .eq('status', 'a_caminho')
@@ -80,6 +80,18 @@ export default function EntregadorPage() {
   }
 
   function abrirNoMapa(endereco) {
+    // Se o cliente compartilhou a localização de GPS dele na hora do
+    // pedido, isso é bem mais preciso que buscar pelo endereço em
+    // texto (principalmente em bairro novo, sem numeração clara, ou
+    // zona rural) -- usa direto como destino da rota.
+    if (endereco.latitude && endereco.longitude) {
+      window.open(
+        `https://www.google.com/maps/dir/?api=1&destination=${endereco.latitude},${endereco.longitude}&travelmode=driving`,
+        '_blank'
+      );
+      return;
+    }
+
     const q = encodeURIComponent(`${endereco.rua}, ${endereco.numero} - ${endereco.bairro}, ${endereco.cidade}`);
     window.open(`https://www.google.com/maps/search/?api=1&query=${q}`, '_blank');
   }
@@ -150,7 +162,12 @@ export default function EntregadorPage() {
                 style={{ fontSize: 14, color: 'var(--azul)', marginBottom: 10, cursor: 'pointer', textDecoration: 'underline' }}
               >
                 📍 {p.enderecos.rua}, {p.enderecos.numero} — {p.enderecos.bairro}, {p.enderecos.cidade}
-                <div style={{ fontSize: 12, color: 'var(--texto-suave)' }}>Toque pra abrir no mapa</div>
+                {p.enderecos.latitude && (
+                  <span style={{ marginLeft: 6, fontSize: 11, background: 'var(--verde-claro)', color: 'var(--verde)', padding: '1px 6px', borderRadius: 999, textDecoration: 'none', display: 'inline-block' }}>
+                    GPS preciso
+                  </span>
+                )}
+                <div style={{ fontSize: 12, color: 'var(--texto-suave)' }}>Toque pra abrir a rota no mapa</div>
               </div>
             )}
 
