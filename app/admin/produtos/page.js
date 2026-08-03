@@ -57,8 +57,13 @@ export default function ProdutosPage() {
     setFotos(slots);
   }
 
-  async function uploadFoto(indice, arquivo) {
+async function uploadFoto(indice, arquivo) {
     setEnviandoFotoIndice(indice);
+
+    const extensao = arquivo.name.split('.').pop().toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
+    const nomeArquivo = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${extensao}`;
+
+    const { error } = await supabase.storage.from('produtos').upload(nomeArquivo, arquivo);
 
     // Supabase Storage rejeita nomes com espaço, acento e caracteres
     // especiais -- "limpa" o nome antes de enviar, mantendo só a
