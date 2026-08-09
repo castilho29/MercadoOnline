@@ -1,7 +1,7 @@
 import './globals.css';
 
 export const metadata = {
-  title: 'PDV do mercado',
+  title: 'Mercado Online',
   manifest: '/manifest.json',
   themeColor: '#2563eb',
   appleWebApp: {
