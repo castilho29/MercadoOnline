@@ -30,8 +30,11 @@ jobs:
       - name: Build (com as chaves do Supabase vindas dos Secrets)
         run: npm run build
         env:
+         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          NEXT_PUBLIC_MICROSSERVICO_URL: ${{ secrets.NEXT_PUBLIC_MICROSSERVICO_URL }}
+          NEXT_PUBLIC_MICROSSERVICO_TOKEN: ${{ secrets.NEXT_PUBLIC_MICROSSERVICO_TOKEN }}
           GITHUB_PAGES: 'true'
 
       - uses: actions/upload-pages-artifact@v3
