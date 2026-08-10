@@ -1,4 +1,5 @@
 import './globals.css';
+import RegistrarServiceWorker from './RegistrarServiceWorker';
 
 export const metadata = {
   title: 'Mercado Online',
@@ -24,7 +25,10 @@ export default function RootLayout({ children }) {
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <link rel="icon" href="/icon-192.png" type="image/png" />
       </head>
-      <body>{children}</body>
+      <body>
+        <RegistrarServiceWorker />
+        {children}
+      </body>
     </html>
   );
 }
