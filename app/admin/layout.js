@@ -1,8 +1,10 @@
+const BASE = process.env.NEXT_PUBLIC_BASE_PATH || '';
+
 export const metadata = {
   title: 'Retaguarda - Mercado',
-  manifest: '/manifest-admin.json',
+  manifest: `${BASE}/manifest-admin.json`,
   appleWebApp: { capable: true, statusBarStyle: 'default', title: 'Retaguarda' },
-  icons: { apple: '/icones-admin/apple-touch-icon.png', icon: '/icones-admin/icon-192.png' },
+  icons: { apple: `${BASE}/icones-admin/apple-touch-icon.png`, icon: `${BASE}/icones-admin/icon-192.png` },
 };
 
 export default function AdminLayout({ children }) {

@@ -1,21 +1,20 @@
 import './globals.css';
 import RegistrarServiceWorker from './RegistrarServiceWorker';
 
+const BASE = process.env.NEXT_PUBLIC_BASE_PATH || '';
+
 export const metadata = {
   title: 'Mercado Online',
-  manifest: '/manifest.json',
+  manifest: `${BASE}/manifest.json`,
   themeColor: '#2563eb',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
     title: 'Mercado',
   },
-  // Usando o campo "icons" do metadata (em vez de <link> escrito na
-  // mão) -- assim o Next.js resolve sozinho o prefixo certo quando
-  // o site está publicado dentro de uma subpasta (GitHub Pages).
   icons: {
-    apple: '/apple-touch-icon.png',
-    icon: '/icon-192.png',
+    apple: `${BASE}/apple-touch-icon.png`,
+    icon: `${BASE}/icon-192.png`,
   },
 };
 
