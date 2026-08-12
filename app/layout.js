@@ -10,6 +10,13 @@ export const metadata = {
     statusBarStyle: 'default',
     title: 'Mercado',
   },
+  // Usando o campo "icons" do metadata (em vez de <link> escrito na
+  // mão) -- assim o Next.js resolve sozinho o prefixo certo quando
+  // o site está publicado dentro de uma subpasta (GitHub Pages).
+  icons: {
+    apple: '/apple-touch-icon.png',
+    icon: '/icon-192.png',
+  },
 };
 
 export const viewport = {
@@ -21,10 +28,6 @@ export const viewport = {
 export default function RootLayout({ children }) {
   return (
     <html lang="pt-BR">
-      <head>
-        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-        <link rel="icon" href="/icon-192.png" type="image/png" />
-      </head>
       <body>
         <RegistrarServiceWorker />
         {children}

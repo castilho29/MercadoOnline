@@ -2,32 +2,32 @@
   "name": "Entregas - Mercado",
   "short_name": "Entregas",
   "description": "Veja e confirme suas entregas",
-  "start_url": "/entregador/login",
+  "start_url": "entregador/login",
   "display": "standalone",
   "background_color": "#fafaf9",
   "theme_color": "#2563eb",
   "orientation": "portrait",
   "icons": [
     {
-      "src": "/icones-entregador/icon-192.png",
+      "src": "icones-entregador/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/icones-entregador/icon-512.png",
+      "src": "icones-entregador/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/icones-entregador/icon-192-maskable.png",
+      "src": "icones-entregador/icon-192-maskable.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "/icones-entregador/icon-512-maskable.png",
+      "src": "icones-entregador/icon-512-maskable.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"

@@ -15,6 +15,11 @@ const nextConfig = {
   images: {
     unoptimized: true, // a otimização de imagem do Next precisa de servidor, exportação estática não tem
   },
+  env: {
+    // Disponível também no navegador (client component), pro
+    // service worker saber registrar no caminho certo.
+    NEXT_PUBLIC_BASE_PATH: paraGithubPages ? '/MercadoOnline' : '',
+  },
 };
 
 module.exports = nextConfig;
