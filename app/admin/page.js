@@ -8,9 +8,11 @@ import { supabase } from '../../lib/supabaseClient';
 const itens = [
   { href: '/admin/produtos', titulo: 'Produtos', descricao: 'Cadastro, foto, estoque com/sem nota', icone: '📦' },
   { href: '/admin/fornecedores', titulo: 'Fornecedores', descricao: 'Cadastro de quem vende pro mercado', icone: '🏭' },
+  { href: '/admin/contranota', titulo: 'Contranota', descricao: 'Compra de fornecedor informal (produtor rural etc)', icone: '📝' },
   { href: '/admin/contas-pagar', titulo: 'Contas a pagar', descricao: 'Parcelas pendentes, pagas e atrasadas', icone: '💳' },
   { href: '/admin/importar-compra', titulo: 'Importar XML de compra', descricao: 'Sobe a nota do fornecedor, entra estoque', icone: '📥' },
   { href: '/admin/entregadores', titulo: 'Entregadores', descricao: 'Cadastro de entregadores e veículos', icone: '🛵' },
+  { href: '/pdv/condicionais', titulo: 'Condicionais pendentes', descricao: 'Vendas condicionais aguardando o cliente decidir', icone: '⏳' },
 ];
 
 export default function AdminPage() {

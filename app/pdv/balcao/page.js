@@ -104,7 +104,31 @@ export default function BalcaoPage() {
 
     if (erroItens) { mostrarToast('Erro: ' + erroItens.message); return; }
 
-    mostrarToast(vendaCondicional ? 'Venda condicional registrada!' : 'Venda finalizada!');
+    // Toda venda finalizada emite NFC-e -- não é opcional, é
+    // obrigação fiscal. Se a emissão falhar, a venda já está salva
+    // (não se perde), mas avisa o operador pra ele saber que
+    // precisa verificar depois.
+    if (!vendaCondicional) {
+      try {
+        const respostaFiscal = await fetch(`${process.env.NEXT_PUBLIC_MICROSSERVICO_URL}/emitir-nfce.php`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Microservico-Token': process.env.NEXT_PUBLIC_MICROSSERVICO_TOKEN },
+          body: JSON.stringify({ venda_balcao_id: venda.id }),
+        });
+        const dadosFiscais = await respostaFiscal.json();
+
+        if (dadosFiscais.status === 'autorizada') {
+          mostrarToast(`Venda finalizada! NFC-e nº ${dadosFiscais.chave_acesso?.slice(-9) || ''} autorizada.`);
+        } else {
+          mostrarToast('Venda salva, mas a nota fiscal não foi emitida — confere em Retaguarda depois.');
+        }
+      } catch {
+        mostrarToast('Venda salva, mas não consegui falar com o emissor fiscal agora.');
+      }
+    } else {
+      mostrarToast('Venda condicional registrada! (nota fiscal só sai quando você acertar a condicional)');
+    }
+
     setCarrinho([]);
     setFormaPagamento(null);
     setDescontoPercentual(0);

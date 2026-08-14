@@ -361,8 +361,10 @@ export default function ProdutosPage() {
                   style={{ width: '100%' }}
                 />
                 <p style={{ fontSize: 11, color: 'var(--texto-suave)', margin: '6px 0 0' }}>
-                  O estoque "com nota" só muda por venda ou por importação de XML de compra — assim ele
-                  continua rastreável até a nota fiscal de origem.
+                  Se você sabe de quem comprou (mesmo informal, tipo produtor rural), o certo é usar a{' '}
+                  <a href="/admin/contranota" style={{ color: 'var(--azul)' }}>tela de Contranota</a> em vez desse ajuste —
+                  assim fica documentado de verdade. Esse campo aqui é só pra correções sem fornecedor identificável
+                  (quebra, perda, inventário).
                 </p>
               </div>
             )}
