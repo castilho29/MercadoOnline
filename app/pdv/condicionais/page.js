@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '../../../lib/supabaseClient';
+import PedidosNotifier from '../../PedidosNotifier';
 
 export default function CondicionaisPage() {
   const [vendas, setVendas] = useState([]);
@@ -81,6 +82,7 @@ export default function CondicionaisPage() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#f5f5f4' }}>
+      <PedidosNotifier />
       {toast && <div className="toast">✓ {toast}</div>}
 
       <header style={{ background: '#111827', color: '#fff', padding: '12px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>

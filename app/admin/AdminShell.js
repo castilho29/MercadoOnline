@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { supabase } from '../../lib/supabaseClient';
+import PedidosNotifier from '../PedidosNotifier';
 
 const GRUPOS = [
   {
@@ -52,6 +53,7 @@ export default function AdminShell({ children }) {
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: '#f5f5f4' }}>
+      <PedidosNotifier />
       <aside
         className="admin-sidebar"
         style={{

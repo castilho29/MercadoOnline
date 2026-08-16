@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '../../../lib/supabaseClient';
+import PedidosNotifier from '../../PedidosNotifier';
 
 const formasPagamento = [
   { id: 'dinheiro', tecla: 'F1', nome: 'Dinheiro', icone: '💵', cor: '#16a34a' },
@@ -193,6 +194,7 @@ export default function BalcaoPage() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#f5f5f4' }}>
+      <PedidosNotifier />
       {toast && <div className="toast">✓ {toast}</div>}
 
       <header style={{ background: '#111827', color: '#fff', padding: '12px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
