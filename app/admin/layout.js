@@ -1,3 +1,5 @@
+import AdminShell from './AdminShell';
+
 const BASE = process.env.NEXT_PUBLIC_BASE_PATH || '';
 
 export const metadata = {
@@ -8,5 +10,5 @@ export const metadata = {
 };
 
 export default function AdminLayout({ children }) {
-  return children;
+  return <AdminShell>{children}</AdminShell>;
 }
