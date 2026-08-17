@@ -78,11 +78,10 @@ export default function AdminShell({ children }) {
                     key={item.href}
                     href={item.href}
                     onClick={() => setMenuAberto(false)}
+                    className={`menu-item ${ativo ? 'menu-item-ativo' : ''}`}
                     style={{
                       display: 'flex', alignItems: 'center', gap: 10, padding: '9px 10px', borderRadius: 8,
                       fontSize: 14, textDecoration: 'none', marginBottom: 2,
-                      background: ativo ? '#2563eb' : 'transparent',
-                      color: ativo ? '#fff' : '#d1d5db',
                     }}
                   >
                     <span style={{ fontSize: 16 }}>{item.icone}</span>
@@ -112,8 +111,8 @@ export default function AdminShell({ children }) {
           >☰</button>
           <div />
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            <Link href="/pdv" style={{ fontSize: 13, color: 'var(--azul)' }}>← Voltar pro PDV</Link>
-            <button onClick={sair} style={{ padding: '6px 14px', fontSize: 13, background: '#fff', color: '#dc2626', border: '1px solid #e7e5e4' }}>Sair</button>
+            <Link href="/pdv" className="link-topo">← Voltar pro PDV</Link>
+            <button onClick={sair} className="botao-sair" style={{ padding: '6px 14px', fontSize: 13, background: '#fff', color: '#dc2626', border: '1px solid #e7e5e4' }}>Sair</button>
           </div>
         </header>
 
@@ -121,6 +120,16 @@ export default function AdminShell({ children }) {
       </div>
 
       <style>{`
+        .menu-item { color: #d1d5db; transition: background 0.15s, color 0.15s; }
+        .menu-item:hover { background: rgba(255,255,255,0.1); color: #fff; }
+        .menu-item-ativo, .menu-item-ativo:hover { background: #2563eb; color: #fff; }
+
+        .link-topo { font-size: 13px; color: var(--azul); text-decoration: none; padding: 4px 8px; border-radius: 6px; transition: background 0.15s; }
+        .link-topo:hover { background: #eff6ff; text-decoration: underline; }
+
+        .botao-sair { transition: background 0.15s, color 0.15s; cursor: pointer; }
+        .botao-sair:hover { background: #dc2626 !important; color: #fff !important; }
+
         @media (max-width: 860px) {
           .admin-sidebar { transform: translateX(-100%); transition: transform 0.2s; }
           .admin-conteudo { margin-left: 0 !important; }

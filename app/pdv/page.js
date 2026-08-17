@@ -164,12 +164,12 @@ export default function PdvPage() {
       <header style={{ background: '#111827', color: '#fff', padding: '12px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ fontWeight: 800, fontSize: 18 }}>MERCADO<span style={{ color: '#60a5fa' }}>PDV</span></div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, fontSize: 14, color: '#d1d5db' }}>
-          <Link href="/pdv/balcao" style={{ color: '#93c5fd', fontSize: 13 }}>🛒 Venda balcão</Link>
+          <Link href="/pdv/balcao" className="header-link" style={{ color: '#93c5fd', fontSize: 13 }}>🛒 Venda balcão</Link>
           <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600, color: online ? '#16a34a' : '#dc2626' }}>
             <span style={{ width: 9, height: 9, borderRadius: '50%', background: online ? '#16a34a' : '#dc2626' }} />
             {online ? 'Online' : 'Offline'}
           </span>
-          <Link href="/admin" style={{ color: '#d1d5db', fontSize: 18 }}>⚙️</Link>
+          <Link href="/admin" className="header-link" style={{ color: '#d1d5db', fontSize: 18 }}>⚙️</Link>
         </div>
       </header>
 

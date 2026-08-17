@@ -201,8 +201,8 @@ export default function BalcaoPage() {
         <div style={{ fontWeight: 800, fontSize: 18 }}>MERCADO<span style={{ color: '#60a5fa' }}>PDV</span></div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, fontSize: 14, color: '#d1d5db' }}>
           <span>🛒 Venda balcão</span>
-          <Link href="/pdv" style={{ color: '#93c5fd', fontSize: 13 }}>🔔 Pedidos online</Link>
-          <Link href="/admin" style={{ color: '#d1d5db', fontSize: 18 }}>⚙️</Link>
+          <Link href="/pdv" className="header-link" style={{ color: '#93c5fd', fontSize: 13 }}>🔔 Pedidos online</Link>
+          <Link href="/admin" className="header-link" style={{ color: '#d1d5db', fontSize: 18 }}>⚙️</Link>
         </div>
       </header>
 

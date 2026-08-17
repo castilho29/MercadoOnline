@@ -128,3 +128,27 @@ input:focus, select:focus { border-color: var(--azul); }
   from { opacity: 0; transform: translateX(-50%) translateY(-10px); }
   to { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
+
+/* Links de navegação no cabeçalho escuro (PDV, Balcão, Condicionais) */
+.header-link {
+  transition: opacity 0.15s, text-decoration 0.15s;
+}
+.header-link:hover {
+  opacity: 0.75;
+  text-decoration: underline;
+}
+
+/* Cards clicáveis (ex: acesso rápido do dashboard, itens de lista) */
+.card-clicavel {
+  transition: transform 0.12s, box-shadow 0.12s, filter 0.12s;
+}
+.card-clicavel:hover {
+  transform: translateY(-2px);
+  filter: brightness(0.96);
+}
+
+/* Botões genéricos -- destaque leve ao passar o mouse, sem
+   depender de cada tela definir o próprio hover */
+button:hover:not(:disabled) {
+  filter: brightness(0.92);
+}

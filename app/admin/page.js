@@ -22,9 +22,13 @@ export default function DashboardPage() {
   const [produtosEstoqueBaixo, setProdutosEstoqueBaixo] = useState([]);
   const [ultimasVendas, setUltimasVendas] = useState([]);
 
-  useEffect(() => { carregarTudo(); }, []);
+  useEffect(() => {
+    carregarTudo(true);
+    const intervalo = setInterval(() => carregarTudo(false), 30_000);
+    return () => clearInterval(intervalo);
+  }, []);
 
-  async function carregarTudo() {
+  async function carregarTudo(primeiraVez) {
     const hoje = inicioDoDia(0).toISOString();
     const seteDiasAtras = inicioDoDia(6).toISOString();
 
