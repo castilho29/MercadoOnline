@@ -282,7 +282,7 @@ export default function DashboardPage() {
             { href: '/pdv/balcao', label: 'Nova venda', icone: '🛒', cor: '#dcfce7', texto: '#16a34a' },
             { href: '/admin/importar-compra', label: 'Nova compra', icone: '📥', cor: '#dbeafe', texto: '#2563eb' },
             { href: '/admin/produtos', label: 'Cadastro produto', icone: '📦', cor: '#ede9fe', texto: '#7c3aed' },
-            { href: '/admin/entregadores', label: 'Entregadores', icone: '🛵', cor: '#fef3c7', texto: '#d97706' },
+            { href: '/admin/pessoas', label: 'Pessoas', icone: '🧑‍🤝‍🧑', cor: '#fef3c7', texto: '#d97706' },
           ].map((a) => (
             <Link key={a.href} href={a.href} style={{ background: a.cor, color: a.texto, borderRadius: 10, padding: '16px 10px', textAlign: 'center', textDecoration: 'none', fontSize: 13, fontWeight: 700 }}>
               <div style={{ fontSize: 22, marginBottom: 6 }}>{a.icone}</div>

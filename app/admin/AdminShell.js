@@ -15,8 +15,7 @@ const GRUPOS = [
     titulo: 'Cadastros',
     itens: [
       { href: '/admin/produtos', label: 'Produtos', icone: '📦' },
-      { href: '/admin/fornecedores', label: 'Fornecedores', icone: '🏭' },
-      { href: '/admin/entregadores', label: 'Entregadores', icone: '🛵' },
+      { href: '/admin/pessoas', label: 'Pessoas', icone: '🧑‍🤝‍🧑' },
     ],
   },
   {
