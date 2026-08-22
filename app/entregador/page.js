@@ -96,6 +96,52 @@ export default function EntregadorPage() {
     window.open(`https://www.google.com/maps/search/?api=1&query=${q}`, '_blank');
   }
 
+  // Quando o entregador tem mais de uma entrega ao mesmo tempo, monta
+  // uma rota única com todas as paradas em sequência, em vez de abrir
+  // um mapa de cada vez. Só entra na rota combinada quem tem GPS
+  // preciso -- endereço só em texto fica de fora (o Google Maps não
+  // mistura bem os dois formatos numa rota só).
+  function paradasComGps() {
+    return entregas.filter((p) => p.enderecos?.latitude && p.enderecos?.longitude);
+  }
+
+  function abrirRotaCompleta() {
+    const paradas = paradasComGps();
+    if (paradas.length === 0) return;
+
+    const destino = paradas[paradas.length - 1];
+    const waypoints = paradas.slice(0, -1).map((p) => `${p.enderecos.latitude},${p.enderecos.longitude}`).join('|');
+
+    let url = `https://www.google.com/maps/dir/?api=1&destination=${destino.enderecos.latitude},${destino.enderecos.longitude}&travelmode=driving`;
+    if (waypoints) url += `&waypoints=${waypoints}`;
+
+    window.open(url, '_blank');
+  }
+
+  function coordenadaOuEndereco(endereco) {
+    if (endereco.latitude && endereco.longitude) return `${endereco.latitude},${endereco.longitude}`;
+    return encodeURIComponent(`${endereco.rua}, ${endereco.numero} - ${endereco.bairro}, ${endereco.cidade}`);
+  }
+
+  // Quando tem mais de uma entrega ao mesmo tempo, monta uma rota
+  // única passando por todas -- evita abrir mapa entrega por
+  // entrega e ter que voltar pro app toda hora. O Google Maps
+  // aceita até 9 waypoints de uma vez, o que cobre qualquer
+  // quantidade realista de entregas simultâneas de um entregador.
+  function abrirRotaCompleta() {
+    if (entregas.length === 0) return;
+    if (entregas.length === 1) { abrirNoMapa(entregas[0].enderecos); return; }
+
+    const paradas = entregas.map((p) => coordenadaOuEndereco(p.enderecos));
+    const destinoFinal = paradas[paradas.length - 1];
+    const paradasIntermediarias = paradas.slice(0, -1).join('|');
+
+    window.open(
+      `https://www.google.com/maps/dir/?api=1&destination=${destinoFinal}&waypoints=${paradasIntermediarias}&travelmode=driving`,
+      '_blank'
+    );
+  }
+
   if (carregando) return <p style={{ padding: 24, fontSize: 16 }}>Carregando...</p>;
 
   if (erro && !entregador) {
@@ -120,6 +166,15 @@ export default function EntregadorPage() {
       </div>
 
       {erro && <p style={{ color: 'var(--vermelho)', fontSize: 14, marginBottom: 12 }}>{erro}</p>}
+
+      {paradasComGps().length > 1 && (
+        <button
+          onClick={abrirRotaCompleta}
+          style={{ width: '100%', padding: 14, marginBottom: 16, background: 'var(--roxo)', fontSize: 14, fontWeight: 700 }}
+        >
+          🗺️ Ver rota com todas as {paradasComGps().length} entregas
+        </button>
+      )}
 
       {entregas.length === 0 && (
         <div className="card" style={{ padding: 32, textAlign: 'center', color: 'var(--texto-suave)' }}>

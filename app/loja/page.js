@@ -28,6 +28,8 @@ export default function LojaPage() {
   const [editandoEndereco, setEditandoEndereco] = useState(false);
   const [endereco, setEndereco] = useState({ rua: '', numero: '', bairro: '', cidade: '', estado: 'PA', cep: '', latitude: null, longitude: null });
   const [buscandoLocalizacao, setBuscandoLocalizacao] = useState(false);
+  const [buscandoCep, setBuscandoCep] = useState(false);
+  const [avisoEndereco, setAvisoEndereco] = useState('');
 
   const [formaPagamento, setFormaPagamento] = useState('dinheiro');
   const [valorPagoEmDinheiro, setValorPagoEmDinheiro] = useState('');
@@ -65,14 +67,71 @@ export default function LojaPage() {
   function usarLocalizacaoAtual() {
     if (!navigator.geolocation) return;
     setBuscandoLocalizacao(true);
+    setAvisoEndereco('');
+
     navigator.geolocation.getCurrentPosition(
-      (posicao) => {
-        setEndereco((atual) => ({ ...atual, latitude: posicao.coords.latitude, longitude: posicao.coords.longitude }));
+      async (posicao) => {
+        const { latitude, longitude } = posicao.coords;
+        setEndereco((atual) => ({ ...atual, latitude, longitude }));
+
+        // Reverse geocoding -- transforma a coordenada de GPS em
+        // endereço legível, pra não precisar digitar tudo na mão.
+        // Usa o Nominatim (OpenStreetMap), gratuito e sem chave.
+        try {
+          const resposta = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1`,
+            { headers: { 'Accept-Language': 'pt-BR' } }
+          );
+          const dados = await resposta.json();
+          const a = dados.address || {};
+
+          setEndereco((atual) => ({
+            ...atual,
+            latitude, longitude,
+            rua: a.road || a.pedestrian || atual.rua,
+            bairro: a.suburb || a.neighbourhood || atual.bairro,
+            cidade: a.city || a.town || a.village || atual.cidade,
+            estado: a.state_code || (a.state ? a.state.slice(0, 2).toUpperCase() : atual.estado),
+            cep: a.postcode || atual.cep,
+          }));
+          setAvisoEndereco('Endereço preenchido pela sua localização — confere se ficou certo antes de continuar.');
+        } catch {
+          setAvisoEndereco('Localização capturada, mas não consegui preencher o endereço sozinho — preenche à mão.');
+        }
+
         setBuscandoLocalizacao(false);
       },
       () => setBuscandoLocalizacao(false),
       { timeout: 8000 }
     );
+  }
+
+  async function buscarPorCep(cepDigitado) {
+    const cepLimpo = cepDigitado.replace(/\D/g, '');
+    if (cepLimpo.length !== 8) return;
+
+    setBuscandoCep(true);
+    setAvisoEndereco('');
+    try {
+      const resposta = await fetch(`https://viacep.com.br/ws/${cepLimpo}/json/`);
+      const dados = await resposta.json();
+
+      if (dados.erro) {
+        setAvisoEndereco('CEP não encontrado — confere se digitou certo.');
+      } else {
+        setEndereco((atual) => ({
+          ...atual,
+          rua: dados.logradouro || atual.rua,
+          bairro: dados.bairro || atual.bairro,
+          cidade: dados.localidade || atual.cidade,
+          estado: dados.uf || atual.estado,
+        }));
+        setAvisoEndereco('Endereço encontrado! Só falta o número.');
+      }
+    } catch {
+      setAvisoEndereco('Não consegui buscar esse CEP agora — preenche à mão.');
+    }
+    setBuscandoCep(false);
   }
 
   function alterarQuantidade(produtoId, delta) {
@@ -267,14 +326,29 @@ export default function LojaPage() {
                   </div>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <button type="button" onClick={usarLocalizacaoAtual} style={{ fontSize: 13, padding: '10px', background: buscandoLocalizacao ? 'var(--texto-suave)' : 'var(--azul)' }}>
+                      {buscandoLocalizacao ? 'Buscando sua localização...' : endereco.latitude ? '📍 Localização capturada ✓ (toca pra atualizar)' : '📍 Usar minha localização atual'}
+                    </button>
+
+                    {avisoEndereco && (
+                      <p style={{ fontSize: 12, color: avisoEndereco.startsWith('CEP não') ? 'var(--vermelho)' : 'var(--verde)', margin: 0 }}>{avisoEndereco}</p>
+                    )}
+
+                    <div style={{ position: 'relative' }}>
+                      <input
+                        placeholder="CEP (preenche o resto sozinho)"
+                        value={endereco.cep}
+                        onChange={(e) => setEndereco({ ...endereco, cep: e.target.value })}
+                        onBlur={(e) => buscarPorCep(e.target.value)}
+                        style={{ width: '100%' }}
+                      />
+                      {buscandoCep && <span style={{ position: 'absolute', right: 10, top: 10, fontSize: 12, color: 'var(--texto-suave)' }}>buscando...</span>}
+                    </div>
+
                     <input placeholder="Rua" value={endereco.rua} onChange={(e) => setEndereco({ ...endereco, rua: e.target.value })} />
                     <input placeholder="Número" value={endereco.numero} onChange={(e) => setEndereco({ ...endereco, numero: e.target.value })} />
                     <input placeholder="Bairro" value={endereco.bairro || ''} onChange={(e) => setEndereco({ ...endereco, bairro: e.target.value })} />
                     <input placeholder="Cidade" value={endereco.cidade} onChange={(e) => setEndereco({ ...endereco, cidade: e.target.value })} />
-                    <input placeholder="CEP" value={endereco.cep} onChange={(e) => setEndereco({ ...endereco, cep: e.target.value })} />
-                    <button type="button" onClick={usarLocalizacaoAtual} style={{ fontSize: 12, padding: '8px 10px', background: 'var(--texto-suave)' }}>
-                      {buscandoLocalizacao ? 'Buscando...' : endereco.latitude ? '📍 Localização capturada ✓' : '📍 Usar minha localização atual'}
-                    </button>
                   </div>
                 )}
               </div>
