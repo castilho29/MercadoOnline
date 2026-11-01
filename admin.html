@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Painel da loja</title>
+<link rel="manifest" href="manifest-loja.webmanifest"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Loja"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#FFFFFF"><link rel="icon" href="favicon-loja-64.png"><link rel="apple-touch-icon" href="apple-touch-icon-loja.png">
+<style>
+:root{color-scheme:light;--bg:#F4F6F9;--card:#FFFFFF;--tx:#1B2433;--mu:#667185;--bd:#E2E7EE;--ln:#EEF1F5;--ac:#1E4FD8;--ac2:#EAF0FF;--ok:#178A4E;--ok2:#E6F5EC;--rd:#C9302C;--rd2:#FCEBEA;--wn:#9A5B00;--wn2:#FFF3D6}
+@media(prefers-color-scheme:dark){:root{color-scheme:dark;--bg:#11151C;--card:#1A2029;--tx:#E6EAF0;--mu:#98A3B3;--bd:#2C3542;--ln:#232B36;--ac:#6EA2FF;--ac2:#1F2B3E;--ok:#4FC587;--ok2:#17301F;--rd:#FF7B72;--rd2:#3A1D1C;--wn:#F2B84B;--wn2:#3A2E14}}
+*{box-sizing:border-box}html,body{margin:0}
+body{background:var(--bg);color:var(--tx);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;-webkit-font-smoothing:antialiased;padding-bottom:calc(76px + env(safe-area-inset-bottom,0px))}
+button,input{font:inherit;color:inherit}
+.top{position:sticky;top:0;z-index:5;background:var(--card);border-bottom:1px solid var(--bd);padding:calc(10px + env(safe-area-inset-top,0px)) 16px 10px;display:flex;align-items:center;gap:10px}
+.top img{width:40px;height:40px;border-radius:10px;object-fit:contain}.top .nm{flex:1;min-width:0}.top b{display:block;font-size:16px}.top small{color:var(--mu);font-size:12.5px}
+.rf{border:1px solid var(--bd);background:var(--card);border-radius:10px;width:40px;height:40px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.rf svg{width:20px;height:20px}.rf.gira svg{animation:g 1s linear infinite}@keyframes g{to{transform:rotate(360deg)}}
+main{max-width:760px;margin:0 auto;padding:14px 16px}
+.aviso{background:var(--ac2);color:var(--tx);border-radius:12px;padding:10px 12px;font-size:13.5px;margin-bottom:12px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:14px 16px;margin-bottom:12px}
+.card h2{margin:0 0 8px;font-size:16px}
+.kp{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}.kp .card{margin:0;padding:12px 14px}
+.kp small{display:block;color:var(--mu);font-size:12.5px;font-weight:600}.kp b{display:block;font-size:22px;font-variant-numeric:tabular-nums;letter-spacing:-.01em}.kp span{font-size:12.5px;color:var(--mu)}
+.big{font-size:32px!important}
+.ln{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--ln)}.ln:last-child{border-bottom:0}.ln b{font-variant-numeric:tabular-nums;white-space:nowrap}
+.ln small{display:block;color:var(--mu);font-size:12.5px}
+.tag{display:inline-block;padding:1px 8px;border-radius:7px;font-size:12px;font-weight:700;background:var(--ln);color:var(--mu)}
+.tag.ok{background:var(--ok2);color:var(--ok)}.tag.rd{background:var(--rd2);color:var(--rd)}.tag.wn{background:var(--wn2);color:var(--wn)}.tag.ac{background:var(--ac2);color:var(--ac)}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}.chips button{border:1px solid var(--bd);background:var(--card);border-radius:20px;padding:6px 12px;font-size:13.5px;font-weight:600;cursor:pointer}.chips button.on{background:var(--ac);border-color:var(--ac);color:#fff}
+.q{width:100%;padding:11px 12px;border:1px solid var(--bd);border-radius:12px;background:var(--card);margin-bottom:10px}
+.mu{color:var(--mu)}.neg{color:var(--rd)}.vz{text-align:center;color:var(--mu);padding:20px 0}
+nav{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--card);border-top:1px solid var(--bd);display:flex;padding-bottom:env(safe-area-inset-bottom,0px)}
+nav button{flex:1;border:0;background:none;padding:8px 2px 9px;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11.5px;font-weight:600;color:var(--mu);cursor:pointer;position:relative}
+nav button svg{width:22px;height:22px}nav button.on{color:var(--ac)}
+nav .bd{position:absolute;top:3px;right:calc(50% - 22px);background:var(--rd);color:#fff;border-radius:9px;font-size:10.5px;padding:0 5px;line-height:16px}
+.login{max-width:380px;margin:12vh auto 0;padding:0 16px;text-align:center}.login img{width:84px;height:84px;object-fit:contain;border-radius:18px}
+.login input{width:100%;padding:13px;border:1px solid var(--bd);border-radius:12px;background:var(--card);margin-top:10px}
+.btn{width:100%;margin-top:14px;min-height:48px;border:0;border-radius:12px;background:var(--ac);color:#fff;font-weight:700;font-size:16px;cursor:pointer}
+.err{color:var(--rd);font-size:14px;min-height:20px;margin-top:8px}
+.bar{height:8px;border-radius:5px;background:var(--ln);overflow:hidden;margin-top:4px}.bar i{display:block;height:100%;background:var(--ac);border-radius:5px}
+</style></head><body>
+<div id="root"></div>
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script>
+/* PAINEL DA LOJA · SÓ CONSULTA
+   Mostra, de qualquer lugar, o que o caixa enviou para o sistema online. Nada é alterado aqui:
+   produtos, preços, estoque, pedidos e ajustes são mudados só na Gestão do computador do caixa. */
+const MO=window.MO_CFG||{}, SB_URL=MO.sbUrl||'', SB_KEY=MO.sbKey||'';  /* config.js: Supabase DESTA empresa */
+const FAKE=(window.MO_CFG&&MO_CFG.fakeDom)||'@wa.mercadoonline.app';
+const sb=(window.supabase&&SB_URL.startsWith("http"))?window.supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}}):null;
+if(!SB_URL.startsWith('http'))addEventListener('DOMContentLoaded',()=>{const d=document.createElement('div');d.style.cssText='background:#C9302C;color:#fff;padding:12px 16px;font:600 15px/1.4 system-ui,sans-serif;text-align:center;position:sticky;top:0;z-index:9999';d.textContent='Site ainda não configurado: preencha o arquivo config.js com a Project URL e a chave anon do Supabase da loja.';document.body.prepend(d)});
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const R=n=>'R$ '+(+n||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const N=n=>(+n||0).toLocaleString('pt-BR',{maximumFractionDigits:3});
+const digits=v=>String(v??'').replace(/\D/g,'');
+const dia=d=>{const x=new Date(d);return new Date(x.getTime()-x.getTimezoneOffset()*6e4).toISOString().slice(0,10)};
+const HOJE=()=>dia(Date.now()),ONTEM=()=>dia(Date.now()-864e5);
+const hm=d=>new Date(d).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+const dbr=d=>d?String(d).slice(0,10).split('-').reverse().join('/'):'';
+function authEmail(v){v=String(v).trim().toLowerCase();if(v.includes('@'))return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)?v:'';let d=digits(v);if(d.length>=10&&d.length<=11)d='55'+d;return d.length>=12&&d.length<=13?d+FAKE:''}
+const IC={hoje:'<path d="M3 12l9-8 9 8M5 10v10h14V10"/>',ped:'<path d="M5 8h14l-1.2 11.2a2 2 0 0 1-2 1.8H8.2a2 2 0 0 1-2-1.8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/>',est:'<path d="M3 7l9-4 9 4-9 4z"/><path d="M3 7v10l9 4 9-4V7M12 11v10"/>',cont:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h4"/>',val:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/>',rf:'<path d="M20 11a8 8 0 1 0-2.3 5.7M20 5v6h-6"/>'};
+const svg=k=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[k]}</svg>`;
+let EMP={n:'Minha Loja'},D={orders:[],products:[],contas:null,lotes:null},tab='hoje',pf='abertos',ef='baixo',eq='',carregou=0;
+try{const c=JSON.parse(localStorage.getItem('mkcfg')||'null');if(c)EMP={...EMP,...c}}catch(e){}
+
+async function init(){
+  if(!sb){$('#root').innerHTML='<div class="login"><h2>Sem conexão</h2><p class="mu">Este painel precisa de internet.</p></div>';return}
+  const {data}=await sb.auth.getSession();
+  if(!data.session)return telaLogin();
+  const {data:ok}=await sb.rpc('sou_admin');
+  if(!ok){await sb.auth.signOut();return telaLogin('Essa conta não é da loja.')}
+  shell();await carregar();setInterval(()=>{if(!document.hidden)carregar()},60000);
+}
+function telaLogin(msg){
+  $('#root').innerHTML=`<div class="login"><img src="${esc(EMP.logo||'logo.png')}" alt="" onerror="this.style.display='none'"><h2 style="margin:10px 0 4px">${esc(EMP.n)}</h2><p class="mu" style="margin:0">Painel da loja · só consulta</p>
+  <input id="le" placeholder="WhatsApp ou e-mail da loja" autocomplete="username"><input id="lp" type="password" placeholder="Senha" autocomplete="current-password">
+  <button class="btn" onclick="entrar()">Entrar</button><div class="err" id="lerr">${esc(msg||'')}</div></div>`;
+  $('#lp').onkeydown=e=>{if(e.key=='Enter')entrar()};
+}
+async function entrar(){
+  const em=authEmail($('#le').value),pw=$('#lp').value;if(!em||!pw)return $('#lerr').textContent='Informe o WhatsApp (ou e-mail) e a senha.';
+  $('#lerr').textContent='Entrando…';
+  const {error}=await sb.auth.signInWithPassword({email:em,password:pw});
+  if(error)return $('#lerr').textContent='WhatsApp/e-mail ou senha incorretos.';
+  init();
+}
+async function sair(){await sb.auth.signOut();telaLogin()}
+function shell(){
+  const T=[['hoje','Hoje'],['ped','Pedidos'],['est','Estoque'],['cont','Contas'],['val','Validade']];
+  $('#root').innerHTML=`<header class="top"><img src="${esc(EMP.logo||'logo.png')}" alt="" onerror="this.style.display='none'"><div class="nm"><b>${esc(EMP.n)}</b><small id="upd">Carregando…</small></div><button class="rf" id="rf" title="Atualizar" onclick="carregar()">${svg('rf')}</button></header>
+  <main id="v"></main><nav>${T.map(([k,t])=>`<button id="t-${k}" class="${tab==k?'on':''}" onclick="ir('${k}')">${svg(k)}${t}<span class="bd" id="b-${k}" hidden></span></button>`).join('')}</nav>`;
+}
+function ir(k){tab=k;document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.id=='t-'+k));draw();scrollTo(0,0)}
+
+async function carregar(){
+  const rf=$('#rf');if(rf)rf.classList.add('gira');
+  try{
+    const since=new Date(Date.now()-8*864e5).toISOString();
+    const [o,p,c,l,cf]=await Promise.all([
+      sb.from('orders').select('id,data,updated_at').gte('updated_at',since).limit(5000),
+      sb.from('products').select('id,n:data->>n,p:data->p,est:data->est,min:data->min,c:data->>c').limit(20000),
+      sb.from('contas').select('id,data').limit(5000),
+      sb.from('lotes').select('id,data').limit(5000),
+      sb.from('config').select('data').eq('id','empresa').maybeSingle()]);
+    if(o.error)throw o.error;
+    D.orders=(o.data||[]).map(r=>r.data).filter(Boolean);
+    D.products=(p.data||[]).map(x=>({...x,p:+x.p||0,est:x.est===null||x.est===''||x.est===undefined?null:+x.est,min:x.min==null||x.min===''?null:+x.min})).sort((a,b)=>String(a.n).localeCompare(String(b.n),'pt-BR'));
+    D.contas=c.error?null:(c.data||[]).map(r=>r.data).filter(x=>x&&!x.del);
+    D.lotes=l.error?null:(l.data||[]).map(r=>r.data).filter(x=>x&&x.st=='ativo');
+    if(cf.data&&cf.data.data){EMP={...EMP,...cf.data.data};try{localStorage.setItem('mkcfg',JSON.stringify(EMP))}catch(e){}}
+    carregou=Date.now();$('#upd').textContent='Atualizado às '+hm(carregou)+' · só consulta';
+  }catch(e){$('#upd').textContent='Não foi possível atualizar ('+(e.message||e)+')'}
+  if(rf)rf.classList.remove('gira');
+  badges();draw();
+}
+const stOf=o=>o.st||(o.done?'ent':'novo');
+const vendas=()=>D.orders.filter(o=>o.fat&&o.st!='canc');
+function badges(){
+  const nv=D.orders.filter(o=>o.canal!='balcao'&&stOf(o)=='novo').length,h=HOJE();
+  const cv=(D.contas||[]).filter(c=>!c.pago&&c.venc<=h).length,lv=(D.lotes||[]).filter(x=>x.val<=dia(Date.now()+7*864e5)).length;
+  const ba=(D.products||[]).filter(baixo).length;
+  [['ped',nv],['cont',cv],['val',lv],['est',ba]].forEach(([k,n])=>{const b=$('#b-'+k);if(b){b.hidden=!n;b.textContent=n}});
+}
+const baixo=p=>p.est!==null&&(p.est<=0||(p.min!=null&&p.est<=p.min));
+function draw(){({hoje:vHoje,ped:vPed,est:vEst,cont:vCont,val:vVal})[tab]()}
+const AVISO='<div class="aviso">👀 <b>Só consulta.</b> Para mudar preços, estoque, pedidos ou ajustes, use a <b>Gestão no computador do caixa</b>. Os dados chegam aqui quando o caixa está com internet.</div>';
+
+function vHoje(){
+  const h=HOJE(),o=ONTEM(),V=vendas(),vd=d=>V.filter(x=>dia(x.fat.date)==d),soma=l=>l.reduce((s,x)=>s+(+x.total||0),0);
+  const hj=vd(h),on=vd(o),sem=V.filter(x=>dia(x.fat.date)>dia(Date.now()-6*864e5));
+  const fp={};hj.forEach(x=>(x.pags||[]).forEach(g=>{fp[g.f]=(fp[g.f]||0)+(+g.v||0)}));
+  const tot=soma(hj),mx=Math.max(1,...Object.values(fp));
+  const app=hj.filter(x=>x.canal!='balcao').length,nv=D.orders.filter(x=>x.canal!='balcao'&&stOf(x)=='novo').length;
+  const cv=(D.contas||[]).filter(c=>!c.pago&&c.venc<=h),lv=(D.lotes||[]).filter(x=>x.val<=dia(Date.now()+7*864e5));
+  const dias=[...Array(7)].map((_,i)=>dia(Date.now()-(6-i)*864e5)),vs=dias.map(d=>soma(vd(d))),m7=Math.max(1,...vs);
+  $('#v').innerHTML=AVISO+`<div class="kp"><div class="card" style="grid-column:1/-1"><small>Vendas de hoje</small><b class="big">${R(tot)}</b><span>${hj.length} venda(s)${app?' · '+app+' pelo app':''} · ticket médio ${R(hj.length?tot/hj.length:0)}</span></div>
+   <div class="card"><small>Ontem</small><b>${R(soma(on))}</b><span>${on.length} venda(s)</span></div><div class="card"><small>Últimos 7 dias</small><b>${R(soma(sem))}</b><span>${sem.length} venda(s)</span></div></div>
+  ${nv||cv.length||lv.length?`<div class="card"><h2>Atenção</h2>${nv?`<div class="ln"><span>🔔 Pedidos do app esperando</span><b><a href="#" onclick="ir('ped');return false">${nv}</a></b></div>`:''}${cv.length?`<div class="ln"><span>💸 Contas vencidas ou de hoje</span><b class="neg">${R(cv.reduce((s,c)=>s+(+c.valor||0),0))}</b></div>`:''}${lv.length?`<div class="ln"><span>📅 Produtos vencendo em 7 dias</span><b>${lv.length}</b></div>`:''}</div>`:''}
+  <div class="card"><h2>Hoje por forma de pagamento</h2>${Object.keys(fp).length?Object.entries(fp).sort((a,b)=>b[1]-a[1]).map(([f,v])=>`<div class="ln" style="display:block"><div style="display:flex;justify-content:space-between"><span>${esc(f)}</span><b>${R(v)}</b></div><div class="bar"><i style="width:${v/mx*100}%"></i></div></div>`).join(''):'<p class="vz">Nenhuma venda hoje ainda.</p>'}</div>
+  <div class="card"><h2>Vendas dos últimos 7 dias</h2>${dias.map((d,i)=>`<div class="ln" style="display:block"><div style="display:flex;justify-content:space-between"><span>${d==h?'Hoje':new Date(d+'T12:00').toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'2-digit'})}</span><b>${R(vs[i])}</b></div><div class="bar"><i style="width:${vs[i]/m7*100}%"></i></div></div>`).join('')}</div>
+  <p class="mu" style="text-align:center;font-size:13px"><a href="#" onclick="sair();return false">Sair da conta</a></p>`;
+}
+function vPed(){
+  const ST={novo:['Novo','wn'],conf:['Aceito','ac'],ent:'Entregue',canc:['Cancelado','rd']};
+  const all=D.orders.filter(o=>o.canal!='balcao'&&Date.parse(o.date)>Date.now()-3*864e5).sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+  const F=[['abertos','Para atender',o=>['novo','conf'].includes(stOf(o))],['ent','Entregues',o=>stOf(o)=='ent'],['canc','Cancelados',o=>stOf(o)=='canc'],['todos','Todos',()=>true]];
+  const l=all.filter((F.find(x=>x[0]==pf)||F[0])[2]);
+  $('#v').innerHTML=AVISO+`<div class="chips">${F.map(([k,t,f])=>`<button class="${pf==k?'on':''}" onclick="pf='${k}';vPed()">${t} (${all.filter(f).length})</button>`).join('')}</div>`
+   +(l.map(o=>{const k=stOf(o),s=ST[k]||['',''],t=Array.isArray(s)?s:[s,'ok'];return `<div class="card"><div style="display:flex;justify-content:space-between;gap:10px"><div><b>#${esc(o.id.slice(-4).toUpperCase())} · ${esc(o.cn||'')}</b> <span class="tag ${t[1]}">${t[0]}</span>${o.fat?' <span class="tag ok">Faturado</span>':''}<br><small class="mu">${new Date(o.date).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'})} · ${o.ent=='retirada'?'Retirada':'Entrega'+(o.bairro?' · '+esc(o.bairro):'')}</small></div><b>${R(o.total)}</b></div>
+     <div class="mu" style="margin-top:6px;font-size:14px">${(o.items||[]).map(i=>`${N(i.q)}× ${esc(i.n)}`).join(' · ')}</div>${o.canc&&o.canc.motivo?`<div class="neg" style="font-size:13.5px;margin-top:4px">Motivo: ${esc(o.canc.motivo)}</div>`:''}</div>`}).join('')||'<div class="card vz">Nenhum pedido nesta lista.</div>');
+}
+function vEst(){
+  const F=[['baixo','Estoque baixo',baixo],['zero','Zerados',p=>p.est!==null&&p.est<=0],['todos','Todos',()=>true]];
+  const t=eq.trim().toLowerCase(),l=D.products.filter((F.find(x=>x[0]==ef)||F[0])[2]).filter(p=>!t||String(p.n).toLowerCase().includes(t));
+  $('#v').innerHTML=AVISO+`<input class="q" id="eq" placeholder="🔍 Buscar produto" value="${esc(eq)}" oninput="eq=this.value;vEst();const i=$('#eq');i.focus();i.setSelectionRange(i.value.length,i.value.length)"><div class="chips">${F.map(([k,tt,f])=>`<button class="${ef==k?'on':''}" onclick="ef='${k}';vEst()">${tt} (${D.products.filter(f).length})</button>`).join('')}</div>
+  <div class="card">${l.slice(0,300).map(p=>`<div class="ln"><span>${esc(p.n)}<small>${R(p.p)}${p.c?' · '+esc(p.c):''}</small></span><b class="${p.est!==null&&p.est<=0?'neg':''}">${p.est===null?'<span class="mu">sem controle</span>':N(p.est)}${p.min!=null&&p.est!==null?`<small style="text-align:right">mín. ${N(p.min)}</small>`:''}</b></div>`).join('')||'<p class="vz">Nada nesta lista.</p>'}${l.length>300?`<p class="vz">Mostrando 300 de ${l.length}. Use a busca.</p>`:''}</div>`;
+}
+function vCont(){
+  if(D.contas===null)return $('#v').innerHTML=AVISO+'<div class="card vz">As contas a pagar aparecem aqui depois que o caixa for atualizado e o supabase.sql novo for rodado.</div>';
+  const h=HOJE(),ab=D.contas.filter(c=>!c.pago).sort((a,b)=>String(a.venc).localeCompare(String(b.venc))),soma=l=>l.reduce((s,c)=>s+(+c.valor||0),0);
+  const venc=ab.filter(c=>c.venc<h),hj=ab.filter(c=>c.venc==h),s7=ab.filter(c=>c.venc>h&&c.venc<=dia(Date.now()+7*864e5));
+  const row=c=>{const n=Math.round((Date.parse(c.venc)-Date.parse(h))/864e5);return `<div class="ln"><span><b style="font-weight:600">${esc(c.forn||'')}</b><small>${dbr(c.venc)} · ${esc(c.doc||c.cat||'')}</small></span><b>${R(c.valor)}<small style="text-align:right">${n<0?`<span class="tag rd">vencida há ${-n}d</span>`:n==0?'<span class="tag wn">hoje</span>':`em ${n} dia(s)`}</small></b></div>`};
+  $('#v').innerHTML=AVISO+`<div class="kp"><div class="card"><small>Vencidas</small><b class="${venc.length?'neg':''}">${R(soma(venc))}</b><span>${venc.length} conta(s)</span></div><div class="card"><small>Vencem hoje</small><b>${R(soma(hj))}</b><span>${hj.length} conta(s)</span></div><div class="card"><small>Próximos 7 dias</small><b>${R(soma(s7))}</b><span>${s7.length} conta(s)</span></div><div class="card"><small>Total em aberto</small><b>${R(soma(ab))}</b><span>${ab.length} conta(s)</span></div></div>
+  <div class="card"><h2>A pagar</h2>${ab.slice(0,200).map(row).join('')||'<p class="vz">Nenhuma conta em aberto. 🎉</p>'}</div>`;
+}
+function vVal(){
+  if(D.lotes===null)return $('#v').innerHTML=AVISO+'<div class="card vz">A validade aparece aqui depois que o caixa for atualizado e o supabase.sql novo for rodado.</div>';
+  const h=HOJE(),l=D.lotes.slice().sort((a,b)=>String(a.val).localeCompare(String(b.val))),pn=id=>(D.products.find(p=>p.id==id)||{}).n;
+  $('#v').innerHTML=AVISO+`<div class="card"><h2>Validade dos produtos</h2>${l.map(x=>{const n=Math.round((Date.parse(x.val)-Date.parse(h))/864e5);return `<div class="ln"><span>${esc(pn(x.pid)||x.n||'')}<small>${esc(x.doc||'')}</small></span><b>${dbr(x.val)}<small style="text-align:right">${n<0?`<span class="tag rd">vencido há ${-n}d</span>`:n<=7?`<span class="tag wn">faltam ${n}d</span>`:`faltam ${n} dias`}</small></b></div>`}).join('')||'<p class="vz">Nenhuma validade lançada.</p>'}</div>`;
+}
+init();
+</script></body></html>
