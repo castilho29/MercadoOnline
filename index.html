@@ -936,51 +936,55 @@ const addrFields=m=>{
   <label>Observação / ponto de referência</label><textarea id="f-ref" rows="2" placeholder="Ex.: casa azul, portão de ferro, perto da farmácia">${esc(m.ref)}</textarea>`;
 };
 const readAddr=()=>{const g=i=>($('#'+i)?$('#'+i).value:'').trim(),f={rua:g('f-rua'),num:g('f-num'),bai:g('f-bai'),cid:g('f-cid'),ref:g('f-ref')};f.a=composeAddr(f);return f};
+/* CADASTRO SEM SENHA: o app cria uma conta só deste celular (login anônimo do Supabase) e fica
+   sempre conectado. Não existe "entrar com o WhatsApp": senão qualquer um que soubesse o número
+   veria o endereço e os pedidos de outra pessoa. Trocou de celular = cadastro novo. */
 function vEu(){
   if(user)return vPerfil();
-  const up=am=='up';if(up&&cLoc)setTimeout(()=>mapaMostra(cLoc),60);
-  return `${bloqueado()?`<div class="card bemv"><b>Bem-vindo ao ${esc(EMP.n)}!</b><br>Para ver os produtos e fazer pedidos, crie sua conta. Leva 1 minuto e é só uma vez.</div>`:''}<div class="card"><h2>${up?'Criar conta':'Entrar'}</h2>
-  <div class="g2"><button class="b ${up?'s':''}" onclick="am='in';render()">Entrar</button><button class="b ${up?'':'s'}" onclick="am='up';render()">Criar conta</button></div><br>
-  ${up?'<label>Nome completo *</label><input id="an" autocomplete="name">':''}
-  <label>WhatsApp (com DDD) ou e-mail</label><input id="al" autocomplete="username" ${up?'oninput="wz(this)"':''} placeholder="(93) 99999-9999 ou nome@email.com">
-  ${up?'<div id="aw" hidden><label>Seu WhatsApp (com DDD)</label><input id="at" type="tel" autocomplete="tel"></div>':''}
-  <label>Senha${up?' (mínimo 6 caracteres)':''}</label><input id="ap" type="password" autocomplete="${up?'new-password':'current-password'}">
-  ${up?`<h2 style="margin-top:14px">Endereço de entrega</h2>${locBtn}<p id="cl" class="mu">${cLoc?'📍 '+cLoc.lat+', '+cLoc.lng:''}</p>${addrFields({})}`:''}
-  <button class="b w" onclick="${up?'criarConta()':'entrar()'}">${up?'Criar conta':'Entrar'}</button></div>${isStandalone()?'':instTip}`;
+  if(cLoc)setTimeout(()=>mapaMostra(cLoc),60);
+  return `${bloqueado()?`<div class="card bemv"><b>Bem-vindo ao ${esc(EMP.n)}!</b><br>Faça seu cadastro para ver os produtos e pedir. Não precisa de senha: é só uma vez.</div>`:''}<div class="card"><h2>Seu cadastro</h2>
+  <label>Nome completo *</label><input id="an" autocomplete="name">
+  <label>WhatsApp com DDD *</label><input id="at" type="tel" inputmode="tel" autocomplete="tel" placeholder="(93) 99999-9999">
+  <label>E-mail <small class="mu">(opcional)</small></label><input id="ae" type="email" inputmode="email" autocomplete="email" placeholder="nome@email.com">
+  <h2 style="margin-top:14px">Endereço de entrega</h2>${locBtn}<p id="cl" class="mu">${cLoc?'📍 '+cLoc.lat+', '+cLoc.lng:''}</p>${addrFields({})}
+  <button class="b w" onclick="criarConta()">Começar a comprar</button></div>${isStandalone()?'':instTip}`;
 }
 function vPerfil(){
   const m=me||{},l=cLoc||m.loc;
   const fl=faltaPerfil(me);if(l)setTimeout(()=>mapaMostra(l),60);
   return `<div class="card"><h2>Minha conta</h2>${fl.length?`<p class="falta">Para fazer pedidos, complete: <b>${fl.join(', ')}</b>.</p>`:''}
   <label>Nome</label><input id="mn" value="${esc(m.n)}" autocomplete="name">
-  <label>WhatsApp (com DDD)</label><input id="mt" type="tel" value="${esc(m.t)}" autocomplete="tel">
+  <label>WhatsApp com DDD *</label><input id="mt" type="tel" inputmode="tel" value="${esc(m.t)}" autocomplete="tel">
+  <label>E-mail <small class="mu">(opcional)</small></label><input id="me2" type="email" inputmode="email" value="${esc(m.e||'')}" autocomplete="email">
   <h2 style="margin-top:14px">Endereço de entrega</h2>
   ${locBtn}<p id="cl" class="mu">${l?'📍 '+l.lat+', '+l.lng+(l.acc?' (±'+l.acc+' m)':''):''}</p>
   ${addrFields(m)}
   <button class="b w" onclick="saveMe()">Salvar cadastro</button></div>
-  <button class="d" onclick="sair()">Sair da conta</button>`;
+  ${user&&user.is_anonymous===false?'<button class="d" onclick="sair()">Sair da conta</button>':'<p class="mu" style="text-align:center;font-size:13px">Seu cadastro fica guardado neste celular. Não precisa de senha.</p>'}`;
 }
 async function criarConta(){
   if(!sb)return alert('Sem conexão. Tente de novo com internet.');
-  const n=$('#an').value.trim(),l=$('#al').value.trim(),p=$('#ap').value,f=readAddr(),mail=l.includes('@'),em=authEmail(l),tel=mail?$('#at').value.trim():l;
+  const n=$('#an').value.trim(),tel=$('#at').value.trim(),e=$('#ae').value.trim().toLowerCase(),f=readAddr();
   const fl=faltaPerfil({n,t:tel,...f,loc:cLoc});
-  if(fl.length)return alert('Para criar a conta, preencha: '+fl.join(', ')+'.');
-  if(!em)return alert('Informe um WhatsApp com DDD ou um e-mail válido.');
-  if(digits(tel).length<10)return alert('Informe seu WhatsApp com DDD.');
-  if(p.length<6)return alert('A senha precisa ter pelo menos 6 caracteres.');
-  const {data,error}=await sb.auth.signUp({email:em,password:p});
-  if(error)return alert(/registered|exists/i.test(error.message)?'Esse contato já tem conta. Use a aba Entrar.':'Não foi possível criar a conta: '+error.message);
-  if(!data.session)return alert('Conta criada, mas a loja precisa desligar a confirmação de e-mail no Supabase.');
-  user=data.user;
-  me={id:user.id,n,t:tel,e:mail?l.toLowerCase():'',rua:f.rua,num:f.num,bai:f.bai,cid:f.cid,ref:f.ref,a:f.a,loc:cLoc||null,date:new Date().toISOString()};
+  if(fl.length)return alert('Para continuar, preencha: '+fl.join(', ')+'.');
+  if(e&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e))return alert('O e-mail parece incompleto. Corrija ou deixe em branco.');
+  let ses=await getSes();
+  if(!ses){
+    const {data,error}=await sb.auth.signInAnonymously();
+    if(error)return alert(/anonymous/i.test(error.message)?'O cadastro sem senha ainda não está ligado nesta loja. Avise a loja: Supabase > Authentication > Sign In / Providers > "Allow anonymous sign-ins".':'Não foi possível criar o cadastro: '+error.message);
+    ses=data.session;
+  }
+  user=ses.user;
+  me={id:user.id,n,t:tel,e,rua:f.rua,num:f.num,bai:f.bai,cid:f.cid,ref:f.ref,a:f.a,loc:cLoc||null,date:new Date().toISOString()};
   const r=await sb.from('clients').upsert({id:me.id,data:me});
-  if(r.error){me=null;return alert('Conta criada, mas o cadastro não foi salvo: '+r.error.message)}
-  cLoc=null;alert('Conta criada!');go(items().length?'cart':'loja');
+  if(r.error){me=null;return alert('O cadastro não foi salvo: '+r.error.message)}
+  cLoc=null;toastMsg('✅ Cadastro feito! Boas compras.');go(items().length?'cart':'loja');
 }
 async function saveMe(){
-  const n=$('#mn').value.trim(),t=$('#mt').value.trim(),f=readAddr();
+  const n=$('#mn').value.trim(),t=$('#mt').value.trim(),e=($('#me2')?$('#me2').value:'').trim().toLowerCase(),f=readAddr();
+  if(e&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e))return alert('O e-mail parece incompleto. Corrija ou deixe em branco.');
   const fl=faltaPerfil({n,t,...f,loc:cLoc||(me&&me.loc)});if(fl.length)return alert('Para salvar, preencha: '+fl.join(', ')+'.');
-  const m={...(me||{}),id:user.id,n,t,rua:f.rua,num:f.num,bai:f.bai,cid:f.cid,ref:f.ref,a:f.a,loc:cLoc||(me&&me.loc)||null,date:(me&&me.date)||new Date().toISOString()};
+  const m={...(me||{}),id:user.id,n,t,e,rua:f.rua,num:f.num,bai:f.bai,cid:f.cid,ref:f.ref,a:f.a,loc:cLoc||(me&&me.loc)||null,date:(me&&me.date)||new Date().toISOString()};
   const {error}=await sb.from('clients').upsert({id:m.id,data:m});
   if(error)return alert('Não foi possível salvar o cadastro: '+error.message);
   me=m;cLoc=null;alert('Cadastro salvo!');go(items().length?'cart':'loja');
