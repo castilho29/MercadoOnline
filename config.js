@@ -1,10 +1,7 @@
-/* Mercado Online · configuração do catálogo
-   Troque as duas linhas abaixo pelos dados do Supabase da loja
-   (Supabase > Project Settings > API): Project URL e a chave "anon public".
-   NUNCA coloque aqui a chave service_role (é secreta). */
+/* Mercado Online · configuração do catálogo (Supabase da loja; chave pública "anon") */
 window.MO_CFG = {
-  sbUrl: 'COLE_AQUI_A_PROJECT_URL',
-  sbKey: 'COLE_AQUI_A_CHAVE_ANON',
+  sbUrl: 'https://canaxqinvgmnkemybmss.supabase.co',
+  sbKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNhbmF4cWludmdtbmtlbXlibXNzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM1NTczMDYsImV4cCI6MjEwOTEzMzMwNn0.olPUoZebd1wG-Da54N3do8GFL91CSUdEtPfci1d1N10',
   fakeDom: '',
   produto: 'Mercado Online'
 };
