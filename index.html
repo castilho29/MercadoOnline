@@ -33,6 +33,8 @@ button.w{width:100%}
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .tag{display:inline-block;padding:2px 8px;border-radius:6px;background:var(--yl);color:#333;font-size:12px;font-weight:700}
 .tag.ok{background:var(--ac);color:#fff}
+.pino div{font-size:36px;line-height:40px;text-align:center;filter:drop-shadow(0 2px 2px rgba(0,0,0,.4))}.mapa{height:230px;border-radius:12px;margin:10px 0 4px;border:1px solid var(--bd);overflow:hidden;z-index:0}.gpsb{font-size:17px;padding:14px}
+.bemv{background:var(--ac2);border-color:var(--ac);line-height:1.5}.falta{background:#fff4e5;color:#8a4b00;border-radius:10px;padding:8px 10px}
 .resm{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center}.resm b{display:block;font-size:20px}.resm span{font-size:12px;color:var(--mu)}.resm .full{grid-column:1/-1;font-weight:700;color:var(--ac);font-size:14px}
 .sec{margin:16px 2px 8px;font-size:16px}
 .and{display:flex;align-items:center;gap:6px;margin:10px 0 6px;font-size:13px;font-weight:700}.and .ps{display:flex;align-items:center;gap:5px;color:var(--mu)}.and .ps i{font-style:normal;width:22px;height:22px;border-radius:50%;border:2px solid var(--bd);display:inline-flex;align-items:center;justify-content:center;font-size:12px}
@@ -252,7 +254,7 @@ let tab='loja',q='',editP=null,editC=null,co={cid:'',addr:'',loc:null,pay:'Dinhe
 const items=()=>Object.entries(S.cart).map(([id,qt])=>({p:S.products.find(x=>x.id==id),qt})).filter(x=>x.p&&x.qt>0);
 const total=()=>items().reduce((s,x)=>s+x.p.p*x.qt,0);
 const count=()=>items().reduce((s,x)=>s+x.qt,0);
-const go=t=>{tab=t;render();if(CUST&&t=='loja'&&sb)loadProducts().then(()=>{const e=$('#pl');if(tab=='loja'&&e)e.innerHTML=listHtml()})};
+const go=t=>{if(CUST&&bloqueado()&&t!='eu'){if(t!=tab)toastMsg(user?'Complete seu cadastro para continuar.':'Crie sua conta (ou entre) para ver os produtos.');t='eu'}tab=t;render();if(CUST&&t=='loja'&&sb)loadProducts().then(()=>{const e=$('#pl');if(tab=='loja'&&e)e.innerHTML=listHtml()})};
 function getLoc(cb){
   if(!navigator.geolocation)return alert('Este aparelho não oferece localização.');
   const box=document.createElement('div');box.className='gps';box.textContent='📡 Buscando sinal de GPS…';document.body.appendChild(box);
@@ -488,17 +490,24 @@ function authEmail(v){
   let d=digits(v);if(d.length>=10&&d.length<=11)d='55'+d;
   return d.length>=12&&d.length<=13?d+FAKE:'';
 }
-let user=null,am='in';
+let user=null,am='up';
+/* CADASTRO OBRIGATÓRIO: nome, WhatsApp, endereço completo e a localização real (GPS) */
+const CADASTRO_OBRIGATORIO=true;
+const perfilOk=m=>!!(m&&m.n&&digits(m.t).length>=10&&m.rua&&m.num&&m.bai&&m.cid&&m.loc&&isFinite(m.loc.lat)&&isFinite(m.loc.lng));
+const bloqueado=()=>CADASTRO_OBRIGATORIO&&CFG&&!!sb&&!perfilOk(me);
+const faltaPerfil=m=>{m=m||{};const f=[];if(!m.n)f.push('nome');if(digits(m.t).length<10)f.push('WhatsApp com DDD');if(!m.rua)f.push('rua');if(!m.num)f.push('número da casa (ou S/N)');if(!m.bai)f.push('bairro');if(!m.cid)f.push('cidade');if(!(m.loc&&isFinite(m.loc.lat)))f.push('localização (toque em 📍 Encontrar meu endereço)');return f};
 const wz=i=>{$('#aw').hidden=!i.value.includes('@')};
 const instTip='<p class="mu">Para instalar o app: no Android toque em "Instalar app" no topo; no iPhone toque em Compartilhar e depois em Adicionar à Tela de Início.</p>';
-const locBtn=`<button class="b s w" onclick="gpsFill(r=>{cLoc=r.loc;fillAddr(r);autoSaveMe(r)})">📍 Usar minha localização</button>`;
+const locBtn=`<button class="b w gpsb" onclick="gpsFill(r=>{cLoc=r.loc;fillAddr(r);mapaMostra(cLoc);autoSaveMe(r)})">📍 Encontrar meu endereço</button><p class="mu" style="margin:6px 0 0;font-size:13px">Use o GPS do celular: a entrega chega no lugar certo. Depois confira o ponto no mapa (dá para arrastar o marcador).</p><div id="mapa" class="mapa" hidden></div>`;
 async function entrar(){
   if(!sb)return alert('Sem conexão. Tente de novo com internet.');
   const em=authEmail($('#al').value);
   if(!em)return alert('Informe um WhatsApp com DDD ou um e-mail válido.');
   const {data,error}=await sb.auth.signInWithPassword({email:em,password:$('#ap').value});
   if(error)return alert('Contato ou senha incorretos.');
-  user=data.user;await loadMe();go(items().length?'cart':'loja');
+  user=data.user;await loadMe();
+  if(bloqueado()){tab='eu';render();return toastMsg('Falta completar seu cadastro: '+faltaPerfil(me).join(', ')+'.')}
+  go(items().length?'cart':'loja');
 }
 async function loadMe(){
   const {data}=await sb.from('clients').select('data').eq('id',user.id).maybeSingle();
@@ -629,7 +638,9 @@ async function init(){
   CUST=true;tab='loja';me=null;
   if(needInstall())showGate();
   await loadCfg();applyEmp();if(tel()){$('#wa').href='https://wa.me/'+waNum(tel());$('#wa').hidden=false}
-  render();await loadProducts();if(user)await loadMe();render();
+  render();await loadProducts();if(user)await loadMe();
+  if(bloqueado())tab='eu';
+  render();
 }
 
 /* ===== ALARME QUE INSISTE + IMPRESSÃO A4 / BOBINA 80 mm ===== */
@@ -919,39 +930,41 @@ async function getSes(){
 const composeAddr=f=>{let s=(f.rua||'')+(f.rua&&f.num?', '+f.num:'');if(f.bai)s+=(s?' - ':'')+f.bai;if(f.cid)s+=(s?', ':'')+f.cid;return s};
 const addrFields=m=>{
   const lg=m.a&&!m.rua;
-  return `<label>Rua / Avenida</label><input id="f-rua" value="${esc(lg?m.a:m.rua)}" autocomplete="address-line1">
-  <div class="g2"><div><label>Número</label><input id="f-num" inputmode="numeric" value="${esc(m.num)}"></div><div><label>Bairro</label><input id="f-bai" value="${esc(m.bai)}"></div></div>
-  <label>Cidade / UF</label><input id="f-cid" value="${esc(lg?'':(m.cid||EMP.c))}">
+  return `<label>Rua / Avenida *</label><input id="f-rua" value="${esc(lg?m.a:m.rua)}" autocomplete="address-line1">
+  <div class="g2"><div><label>Número * <small class="mu">(ou S/N)</small></label><input id="f-num" value="${esc(m.num)}" autocomplete="address-line2"></div><div><label>Bairro *</label><input id="f-bai" value="${esc(m.bai)}"></div></div>
+  <label>Cidade / UF *</label><input id="f-cid" value="${esc(lg?'':(m.cid||EMP.c))}">
   <label>Observação / ponto de referência</label><textarea id="f-ref" rows="2" placeholder="Ex.: casa azul, portão de ferro, perto da farmácia">${esc(m.ref)}</textarea>`;
 };
 const readAddr=()=>{const g=i=>($('#'+i)?$('#'+i).value:'').trim(),f={rua:g('f-rua'),num:g('f-num'),bai:g('f-bai'),cid:g('f-cid'),ref:g('f-ref')};f.a=composeAddr(f);return f};
 function vEu(){
   if(user)return vPerfil();
-  const up=am=='up';
-  return `<div class="card"><h2>${up?'Criar conta':'Entrar'}</h2>
+  const up=am=='up';if(up&&cLoc)setTimeout(()=>mapaMostra(cLoc),60);
+  return `${bloqueado()?`<div class="card bemv"><b>Bem-vindo ao ${esc(EMP.n)}!</b><br>Para ver os produtos e fazer pedidos, crie sua conta. Leva 1 minuto e é só uma vez.</div>`:''}<div class="card"><h2>${up?'Criar conta':'Entrar'}</h2>
   <div class="g2"><button class="b ${up?'s':''}" onclick="am='in';render()">Entrar</button><button class="b ${up?'':'s'}" onclick="am='up';render()">Criar conta</button></div><br>
-  ${up?'<label>Nome</label><input id="an" autocomplete="name">':''}
+  ${up?'<label>Nome completo *</label><input id="an" autocomplete="name">':''}
   <label>WhatsApp (com DDD) ou e-mail</label><input id="al" autocomplete="username" ${up?'oninput="wz(this)"':''} placeholder="(93) 99999-9999 ou nome@email.com">
   ${up?'<div id="aw" hidden><label>Seu WhatsApp (com DDD)</label><input id="at" type="tel" autocomplete="tel"></div>':''}
   <label>Senha${up?' (mínimo 6 caracteres)':''}</label><input id="ap" type="password" autocomplete="${up?'new-password':'current-password'}">
-  ${up?`<h2 style="margin-top:14px">Endereço de entrega</h2>${locBtn}<p id="cl" class="mu"></p>${addrFields({})}`:''}
-  <button class="b w" onclick="${up?'criarConta()':'entrar()'}">${up?'Criar conta':'Entrar'}</button></div>${instTip}`;
+  ${up?`<h2 style="margin-top:14px">Endereço de entrega</h2>${locBtn}<p id="cl" class="mu">${cLoc?'📍 '+cLoc.lat+', '+cLoc.lng:''}</p>${addrFields({})}`:''}
+  <button class="b w" onclick="${up?'criarConta()':'entrar()'}">${up?'Criar conta':'Entrar'}</button></div>${isStandalone()?'':instTip}`;
 }
 function vPerfil(){
   const m=me||{},l=cLoc||m.loc;
-  return `<div class="card"><h2>Minha conta</h2>${me?'':'<p class="mu">Complete seu cadastro para fazer pedidos.</p>'}
+  const fl=faltaPerfil(me);if(l)setTimeout(()=>mapaMostra(l),60);
+  return `<div class="card"><h2>Minha conta</h2>${fl.length?`<p class="falta">Para fazer pedidos, complete: <b>${fl.join(', ')}</b>.</p>`:''}
   <label>Nome</label><input id="mn" value="${esc(m.n)}" autocomplete="name">
   <label>WhatsApp (com DDD)</label><input id="mt" type="tel" value="${esc(m.t)}" autocomplete="tel">
   <h2 style="margin-top:14px">Endereço de entrega</h2>
   ${locBtn}<p id="cl" class="mu">${l?'📍 '+l.lat+', '+l.lng+(l.acc?' (±'+l.acc+' m)':''):''}</p>
   ${addrFields(m)}
   <button class="b w" onclick="saveMe()">Salvar cadastro</button></div>
-  <button class="d" onclick="sair()">Sair da conta</button>${instTip}`;
+  <button class="d" onclick="sair()">Sair da conta</button>`;
 }
 async function criarConta(){
   if(!sb)return alert('Sem conexão. Tente de novo com internet.');
   const n=$('#an').value.trim(),l=$('#al').value.trim(),p=$('#ap').value,f=readAddr(),mail=l.includes('@'),em=authEmail(l),tel=mail?$('#at').value.trim():l;
-  if(!n||!f.rua)return alert('Preencha o nome e o endereço (rua).');
+  const fl=faltaPerfil({n,t:tel,...f,loc:cLoc});
+  if(fl.length)return alert('Para criar a conta, preencha: '+fl.join(', ')+'.');
   if(!em)return alert('Informe um WhatsApp com DDD ou um e-mail válido.');
   if(digits(tel).length<10)return alert('Informe seu WhatsApp com DDD.');
   if(p.length<6)return alert('A senha precisa ter pelo menos 6 caracteres.');
@@ -966,7 +979,7 @@ async function criarConta(){
 }
 async function saveMe(){
   const n=$('#mn').value.trim(),t=$('#mt').value.trim(),f=readAddr();
-  if(!n||!f.rua||digits(t).length<10)return alert('Informe nome, WhatsApp com DDD e o endereço (rua e número).');
+  const fl=faltaPerfil({n,t,...f,loc:cLoc||(me&&me.loc)});if(fl.length)return alert('Para salvar, preencha: '+fl.join(', ')+'.');
   const m={...(me||{}),id:user.id,n,t,rua:f.rua,num:f.num,bai:f.bai,cid:f.cid,ref:f.ref,a:f.a,loc:cLoc||(me&&me.loc)||null,date:(me&&me.date)||new Date().toISOString()};
   const {error}=await sb.from('clients').upsert({id:m.id,data:m});
   if(error)return alert('Não foi possível salvar o cadastro: '+error.message);
@@ -985,6 +998,31 @@ async function autoSaveMe(r){
   const {error}=await sb.from('clients').upsert({id:m.id,data:m});
   if(!error){me=m;toastMsg('✅ Endereço salvo no seu cadastro. Complete o número e confira.')}
 }
+/* mapa para o cliente conferir o ponto e arrastar o marcador até a porta de casa */
+let LMAP=null,LMK=null,leafletP=null;
+function leaflet(){
+  if(window.L&&L.map)return Promise.resolve();
+  return leafletP||(leafletP=new Promise((ok,no)=>{
+    const c=document.createElement('link');c.rel='stylesheet';c.href='https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css';document.head.appendChild(c);
+    const j=document.createElement('script');j.src='https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js';j.onload=ok;j.onerror=()=>{leafletP=null;no()};document.head.appendChild(j)}));
+}
+async function mapaMostra(loc){
+  const d=$('#mapa');if(!d||!loc)return;d.hidden=false;
+  try{await leaflet()}catch(e){d.style.height='auto';d.innerHTML=`<a class="b s w" target="_blank" rel="noopener" href="${mapUrl(loc)}">Ver no mapa</a>`;return}
+  if(LMAP){try{LMAP.remove()}catch(e){}LMAP=null}
+  LMAP=L.map(d,{zoomControl:true,attributionControl:true}).setView([loc.lat,loc.lng],18);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(LMAP);
+  LMK=L.marker([loc.lat,loc.lng],{draggable:true,icon:L.divIcon({className:'pino',html:'<div>📍</div>',iconSize:[40,40],iconAnchor:[20,38]})}).addTo(LMAP).bindTooltip('Arraste até a sua porta');
+  LMK.on('dragend',async()=>{
+    const p=LMK.getLatLng(),nl={lat:+p.lat.toFixed(6),lng:+p.lng.toFixed(6),acc:5,manual:true};cLoc=nl;
+    const c=$('#cl');if(c)c.textContent='📍 '+nl.lat+', '+nl.lng+' (ajustado no mapa)';
+    let r={};try{r=await revGeo(nl.lat,nl.lng)}catch(e){}
+    const set=(id,v)=>{const e=$('#'+id);if(e&&v&&!e.dataset.mexeu)e.value=v};set('f-rua',r.rua);set('f-bai',r.bai);set('f-cid',r.cid);
+    toastMsg('📍 Ponto ajustado. Confira a rua e o número.');
+  });
+  setTimeout(()=>LMAP&&LMAP.invalidateSize(),200);
+}
+document.addEventListener('input',e=>{if(/^f-(rua|bai|cid)$/.test(e.target.id))e.target.dataset.mexeu=1});
 function renderAcc(){
   const b=$('#acc');if(!b)return;
   b.hidden=!CUST;b.classList.toggle('on',tab=='eu');
