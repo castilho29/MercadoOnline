@@ -33,6 +33,8 @@ button.w{width:100%}
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .tag{display:inline-block;padding:2px 8px;border-radius:6px;background:var(--yl);color:#333;font-size:12px;font-weight:700}
 .tag.ok{background:var(--ac);color:#fff}
+.horb{border-radius:12px;padding:10px 12px;margin:0 0 10px;font-size:15px;border:1px solid var(--bd);background:var(--card)}.horb.ab b{color:#178A4E}.horb.fe{background:#FDECEA;border-color:#F3B8B0}.horb.fe b{color:#B3261E}
+.horb span{color:var(--mu)}.horb summary{cursor:pointer;color:var(--ac);font-size:13px;font-weight:700;margin-top:4px}.horb .row{font-size:14px;padding:3px 0}.horfe{background:#FDECEA;color:#8C1D18;font-weight:600}
 .pino div{font-size:36px;line-height:40px;text-align:center;filter:drop-shadow(0 2px 2px rgba(0,0,0,.4))}.mapa{height:230px;border-radius:12px;margin:10px 0 4px;border:1px solid var(--bd);overflow:hidden;z-index:0}.gpsb{font-size:17px;padding:14px}
 .bemv{background:var(--ac2);border-color:var(--ac);line-height:1.5}.falta{background:#fff4e5;color:#8a4b00;border-radius:10px;padding:8px 10px}
 .resm{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center}.resm b{display:block;font-size:20px}.resm span{font-size:12px;color:var(--mu)}.resm .full{grid-column:1/-1;font-weight:700;color:var(--ac);font-size:14px}
@@ -465,7 +467,7 @@ listHtml=function(){
 };
 vLoja=function(){
   const n=count();
-  return `
+  return `${horBarra()}
   <div class="srch"><input placeholder="Buscar produtos ou ler código de barras" value="${esc(q)}" onkeydown="if(event.key=='Enter')scanAdd()" oninput="q=this.value;lim=60;$('#pl').innerHTML=listHtml()">
   <select aria-label="Categoria" onchange="cat=this.value;lim=60;$('#pl').innerHTML=listHtml()"><option value="">Todos (${S.products.length})</option>${catList().map(([c,k])=>`<option value="${esc(c)}" ${cat==c?'selected':''}>${esc(c)} (${k})</option>`).join('')}</select>
   <select aria-label="Ordenar" onchange="ord=this.value;lim=60;$('#pl').innerHTML=listHtml()">${[['az','A-Z'],['za','Z-A'],['lo','Menor preço'],['hi','Maior preço']].map(([v,x])=>`<option value="${v}" ${ord==v?'selected':''}>Ordenar: ${x}</option>`).join('')}</select></div>
@@ -516,6 +518,7 @@ async function loadMe(){
 async function sair(){await sb.auth.signOut();user=null;me=null;S.mine=[];loc();go('loja')}
 async function finishC(){
   if(!user||!me){alert('Entre na sua conta e complete o cadastro para finalizar.');return go('eu')}
+  await loadCfg();{const hs=horSt(EMP.hor);if(!hs.aberto){render();return alert(horMsg(hs))}}
   const it=items(),t=totalFinal(),cash=parseFloat(co.cash)||0;
   if(co.ent!='retirada'&&taxaAtiva()&&taxaDe(co.bai)==null)return alert('Escolha o bairro da entrega ou selecione "Retirar na loja".');
   if(co.ent!='retirada'&&!co.addr.trim())return alert('Informe o endereço de entrega.');
@@ -528,6 +531,7 @@ async function finishC(){
   if(error){
     const m=/ESTOQUE:(.*)/.exec(error.message);
     if(m){await loadProducts();render();return alert('O produto "'+m[1].trim()+'" não tem estoque suficiente. Ajuste o carrinho.')}
+    if(/FECHADO/.test(error.message)){await loadCfg();render();return alert(horMsg(horSt(EMP.hor).aberto?{aberto:false,abre:''}:horSt(EMP.hor)))}
     return alert('Não foi possível enviar o pedido: '+error.message);
   }
   if(res.data&&res.data.id){if(Math.abs(res.data.total-o.total)>0.009)alert('Alguns preços mudaram. Total atualizado: '+R(res.data.total));o=res.data}
@@ -1435,6 +1439,35 @@ vCart=function(){
   setTimeout(trocoTxt,0);
   return h;
 };
+/* ===== HORÁRIO DE ATENDIMENTO (a mesma regra é conferida no banco online, função loja_aberta) ===== */
+const DIAS=['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
+function horSt(h,d){
+  d=d||new Date();h=h||{};
+  if(h.pausa)return {aberto:false,pausa:true};
+  if(!h.on)return {aberto:true,livre:true};
+  let p;try{p=Object.fromEntries(new Intl.DateTimeFormat('en-US',{timeZone:h.tz||'America/Sao_Paulo',weekday:'short',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(d).map(x=>[x.type,x.value]))}catch(e){return {aberto:true,livre:true}}
+  const dw=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].indexOf(p.weekday),m=(+p.hour%24)*60+(+p.minute),antes=+h.antes||0;
+  const mm=x=>{const [a,b]=String(x).split(':');return (+a)*60+(+b||0)},ivs=k=>((h.d&&h.d[k])||[]).filter(i=>i&&i[0]&&i[1]);
+  const hm=x=>{x=((x%1440)+1440)%1440;return String(Math.floor(x/60)).padStart(2,'0')+':'+String(x%60).padStart(2,'0')};
+  for(const [a,b] of ivs(dw)){const i=mm(a),f=mm(b);
+    if(f>i&&m>=i&&m<f-antes)return {aberto:true,ate:hm(f-antes)};
+    if(f<=i&&m>=i&&(1440-m)+f>antes)return {aberto:true,ate:hm(f-antes)}}
+  for(const [a,b] of ivs((dw+6)%7)){const i=mm(a),f=mm(b);if(f<=i&&m<f-antes)return {aberto:true,ate:hm(f-antes)}}
+  for(let k=0;k<8;k++){const dd=(dw+k)%7,l=ivs(dd).map(([a])=>mm(a)).filter(i=>k>0||i>m).sort((x,y)=>x-y);
+    if(l.length)return {aberto:false,abre:(k==0?'hoje':k==1?'amanhã':DIAS[dd].toLowerCase())+' às '+hm(l[0])}}
+  return {aberto:false,abre:''};
+}
+const horMsg=st=>st.pausa?((EMP.hor&&EMP.hor.msgPausa)||'A loja pausou os pedidos pelo app por alguns minutos. Tente de novo daqui a pouco.'):'A loja está fechada agora'+(st.abre?' e abre '+st.abre:'')+'. Você pode montar o carrinho, mas só dá para enviar o pedido quando estiver aberta.';
+function horTabela(h){h=h||{};return [1,2,3,4,5,6,0].map(k=>{const l=((h.d&&h.d[k])||[]).filter(i=>i&&i[0]&&i[1]);return `<div class="row"><span>${DIAS[k]}</span><span>${l.length?l.map(i=>i[0]+' às '+i[1]).join(' e '):'Fechado'}</span></div>`}).join('')}
+function horBarra(){
+  const h=EMP.hor||{};if(!h.on&&!h.pausa)return '';
+  const st=horSt(h);
+  return `<div id="horb" class="horb ${st.aberto?'ab':'fe'}"><div><b>${st.aberto?'🟢 Aberto agora':st.pausa?'⏸️ Pedidos pausados':'🔴 Fechado agora'}</b> <span>${st.aberto?(st.ate?'· pedidos até '+st.ate:''):st.pausa?'· '+esc((h.msgPausa||'volta em instantes')):(st.abre?'· abre '+st.abre:'')}</span></div>${h.on?`<details><summary>Horários</summary>${horTabela(h)}${+h.antes?`<p class="mu" style="margin:6px 0 0;font-size:13px">Pedidos pelo app até ${+h.antes} min antes de fechar.</p>`:''}</details>`:''}</div>`;
+}
+setInterval(()=>{const b=$('#horb');if(b&&(tab=='loja'||tab=='cart')){const t=document.createElement('div');t.innerHTML=horBarra();const n=t.firstElementChild;if(n&&n.outerHTML!=b.outerHTML&&!b.querySelector('details[open]'))b.replaceWith(n)}},60000);
+/* carrinho: fora do horário mostra o aviso e não deixa enviar */
+const _vcHor=vCart;
+vCart=function(){let h=_vcHor();if(CUST&&items().length){const st=horSt(EMP.hor);if(!st.aberto)h=horBarra()+`<div class="card horfe">${esc(horMsg(st))}</div>`+h.replace('onclick="finishC()"','onclick="finishC()" disabled style="opacity:.5"')}return h};
 function txHtml(){
   return (EMP.taxas||[]).map((t,i)=>`<div class="g2tx"><input value="${esc(t.b)}" placeholder="Nome do bairro" oninput="EMP.taxas[${i}].b=this.value"><input type="number" inputmode="decimal" min="0" step="0.5" value="${t.v}" placeholder="R$" oninput="EMP.taxas[${i}].v=parseFloat(this.value)||0"><button class="b rd" style="padding:0" onclick="txDel(${i})" aria-label="Remover bairro">✕</button></div>`).join('')||'<p class="mu">Nenhum bairro cadastrado: a entrega não tem taxa.</p>';
 }
