@@ -33,6 +33,9 @@ button.w{width:100%}
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .tag{display:inline-block;padding:2px 8px;border-radius:6px;background:var(--yl);color:#333;font-size:12px;font-weight:700}
 .tag.ok{background:var(--ac);color:#fff}
+.gpsm{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px}.gbx{background:var(--card);color:var(--tx);border-radius:16px;padding:18px;max-width:420px;width:100%}
+.gacc{font-size:30px;font-weight:800;margin:4px 0}.gbar{height:10px;background:var(--bd);border-radius:6px;overflow:hidden}.gbar i{display:block;height:100%;transition:width .4s}.gbx .b[disabled]{opacity:.55}
+.mq{background:#FFF4E5;border:1px solid #F0C27A;border-radius:12px;padding:10px 12px;margin:6px 0 4px}.mok{background:#E6F6EE;color:#14532d;border-radius:12px;padding:8px 12px;margin:6px 0 4px;font-size:14px}
 .horb{border-radius:12px;padding:10px 12px;margin:0 0 10px;font-size:15px;border:1px solid var(--bd);background:var(--card)}.horb.ab b{color:#178A4E}.horb.fe{background:#FDECEA;border-color:#F3B8B0}.horb.fe b{color:#B3261E}
 .horb span{color:var(--mu)}.horb summary{cursor:pointer;color:var(--ac);font-size:13px;font-weight:700;margin-top:4px}.horb .row{font-size:14px;padding:3px 0}.horfe{background:#FDECEA;color:#8C1D18;font-weight:600}
 .pino div{font-size:36px;line-height:40px;text-align:center;filter:drop-shadow(0 2px 2px rgba(0,0,0,.4))}.mapa{height:230px;border-radius:12px;margin:10px 0 4px;border:1px solid var(--bd);overflow:hidden;z-index:0}.gpsb{font-size:17px;padding:14px}
@@ -257,24 +260,42 @@ const items=()=>Object.entries(S.cart).map(([id,qt])=>({p:S.products.find(x=>x.i
 const total=()=>items().reduce((s,x)=>s+x.p.p*x.qt,0);
 const count=()=>items().reduce((s,x)=>s+x.qt,0);
 const go=t=>{if(CUST&&bloqueado()&&t!='eu'){if(t!=tab)toastMsg(user?'Complete seu cadastro para continuar.':'Crie sua conta (ou entre) para ver os produtos.');t='eu'}tab=t;render();if(CUST&&t=='loja'&&sb)loadProducts().then(()=>{const e=$('#pl');if(tab=='loja'&&e)e.innerHTML=listHtml()})};
+/* GPS PRECISO: espera o GPS de verdade (o 1º valor costuma vir do Wi-Fi/antena e errar centenas de metros),
+   recusa posição ruim, faz a média ponderada das melhores leituras e explica o que fazer quando não melhora. */
 function getLoc(cb){
   if(!navigator.geolocation)return alert('Este aparelho não oferece localização.');
-  const box=document.createElement('div');box.className='gps';box.textContent='📡 Buscando sinal de GPS…';document.body.appendChild(box);
-  let best=null,done=false,id,tm;
-  const stop=()=>{done=true;navigator.geolocation.clearWatch(id);clearTimeout(tm);box.remove()};
-  const fin=()=>{if(done)return;stop();if(!best)return alert('Não foi possível obter a localização. Vá para um local aberto e tente de novo.');cb(best)};
-  const err=e=>{
-    if(done)return;if(best)return fin();stop();
-    alert(e.code==1?'Permissão negada. Ative a localização do navegador (cadeado ao lado do endereço) e tente de novo.':e.code==2?'Sinal de GPS indisponível. Vá para um local aberto e tente de novo.':'Tempo esgotado. Tente de novo em um local aberto.');
-  };
-  box.onclick=fin;
+  const ALVO=12,BOM=25,ACEITA=60,MAX=45000;
+  const box=document.createElement('div');box.className='gpsm';document.body.appendChild(box);
+  let am=[],best=null,done=false,id,t0=Date.now(),tm,tk;
+  const media=()=>{const ok=am.filter(x=>x.acc<=Math.max(best.acc*1.6,best.acc+5)).slice(-8);let w=0,la=0,ln=0;ok.forEach(x=>{const k=1/(x.acc*x.acc);w+=k;la+=x.lat*k;ln+=x.lng*k});
+    return {lat:+(la/w).toFixed(6),lng:+(ln/w).toFixed(6),acc:Math.max(1,Math.round(best.acc)),n:ok.length,ok:false}};
+  const stop=()=>{done=true;navigator.geolocation.clearWatch(id);clearTimeout(tm);clearInterval(tk);box.remove()};
+  const usar=()=>{if(done||!best)return;const r=media();stop();cb(r)};
+  const dica=()=>{const seg=Math.round((Date.now()-t0)/1000),a=best&&best.acc;
+    if(a>=500&&seg>=8)return '⚠️ O celular está mandando só a localização <b>aproximada</b>. Ligue a <b>Localização exata/precisa</b>:<br>• Android: Configurações › Localização › ligar <b>"Usar localização precisa"</b><br>• iPhone: Ajustes › Privacidade › Serviços de Localização › Safari (ou o app) › <b>Localização Exata</b>';
+    if(a>ACEITA&&seg>=12)return 'Vá para perto de uma janela ou para fora de casa, com o céu à vista. O GPS demora mais dentro de casa e embaixo de laje.';
+    return 'Fique parado um instante. Quanto menor o número, mais certo o lugar.'};
+  const draw=()=>{const seg=Math.round((Date.now()-t0)/1000),a=best?Math.round(best.acc):null,ok=a!=null&&a<=ACEITA;
+    const cor=a==null?'var(--mu)':a<=BOM?'#178A4E':a<=ACEITA?'#B7791F':'#B3261E',pct=a==null?5:Math.max(5,Math.min(100,100*(1-Math.log(a/ALVO)/Math.log(1000/ALVO))));
+    box.innerHTML=`<div class="gbx"><h3 style="margin:0 0 6px">📡 Encontrando você no mapa</h3>
+    <div class="gacc" style="color:${cor}">${a==null?'Procurando sinal…':'Precisão: ±'+a+' m'}</div>
+    <div class="gbar"><i style="width:${pct}%;background:${cor}"></i></div>
+    <p class="mu" style="margin:8px 0">${a!=null&&a<=BOM?'✅ Ótimo! Já dá para usar.':dica()}</p>
+    <button class="b w" ${ok?'':'disabled'} onclick="window.__gpsUsar()">${ok?'Usar esta localização':'Aguardando precisão melhor… ('+seg+'s)'}</button>
+    <button class="d" style="margin-top:6px" onclick="window.__gpsCanc()">Cancelar</button></div>`};
+  window.__gpsUsar=usar;window.__gpsCanc=()=>stop();
+  const err=e=>{if(done)return;
+    if(e.code!=1)return;   // "sem sinal"/"demorou" passageiros: continua esperando (o limite de 45 s decide)
+    if(best&&best.acc<=ACEITA)return usar();stop();
+    alert(e.code==1?'A localização está bloqueada para o app. Libere em: Configurações do celular › Apps › (o navegador) › Permissões › Localização › Permitir, e ligue a "localização precisa".':e.code==2?'GPS sem sinal. Ligue a localização do celular, vá para perto de uma janela ou para fora e tente de novo.':'O GPS demorou demais. Vá para um local com céu à vista e tente de novo.')};
   id=navigator.geolocation.watchPosition(p=>{
-    const a=Math.round(p.coords.accuracy);
-    if(!best||a<best.acc)best={lat:+p.coords.latitude.toFixed(6),lng:+p.coords.longitude.toFixed(6),acc:a};
-    box.innerHTML='📡 Precisão: ±'+best.acc+' m<br><small>Toque aqui para usar esta posição</small>';
-    if(best.acc<=25)fin();
-  },err,{enableHighAccuracy:true,maximumAge:0,timeout:20000});
-  tm=setTimeout(fin,20000);
+    if(done)return;const x={lat:p.coords.latitude,lng:p.coords.longitude,acc:p.coords.accuracy||9999};
+    am.push(x);if(!best||x.acc<best.acc)best=x;draw();
+    const bons=am.filter(y=>y.acc<=BOM).length;
+    if(best.acc<=ALVO&&bons>=3)usar();                      // muito bom e estável: usa sozinho
+  },err,{enableHighAccuracy:true,maximumAge:0,timeout:MAX});
+  tk=setInterval(draw,1000);draw();
+  tm=setTimeout(()=>{if(done)return;if(best&&best.acc<=ACEITA*2.5)return usar();stop();alert('Não deu para achar a localização com precisão. Ligue a "localização precisa" do celular, vá para perto de uma janela e tente de novo. Você também pode marcar sua casa tocando no mapa.')},MAX);
 }
 const mapUrl=l=>`https://www.google.com/maps?q=${l.lat},${l.lng}`;
 const th=p=>p.img?`<img class="ph" alt="" src="${p.img}">`:`<div class="ph">🛒</div>`;
@@ -497,10 +518,10 @@ let user=null,am='up';
 const CADASTRO_OBRIGATORIO=true;
 const perfilOk=m=>!!(m&&m.n&&digits(m.t).length>=10&&m.rua&&m.num&&m.bai&&m.cid&&m.loc&&isFinite(m.loc.lat)&&isFinite(m.loc.lng));
 const bloqueado=()=>CADASTRO_OBRIGATORIO&&CFG&&!!sb&&!perfilOk(me);
-const faltaPerfil=m=>{m=m||{};const f=[];if(!m.n)f.push('nome');if(digits(m.t).length<10)f.push('WhatsApp com DDD');if(!m.rua)f.push('rua');if(!m.num)f.push('número da casa (ou S/N)');if(!m.bai)f.push('bairro');if(!m.cid)f.push('cidade');if(!(m.loc&&isFinite(m.loc.lat)))f.push('localização (toque em 📍 Encontrar meu endereço)');return f};
+const faltaPerfil=m=>{m=m||{};const f=[];if(!m.n)f.push('nome');if(digits(m.t).length<10)f.push('WhatsApp com DDD');if(!m.rua)f.push('rua');if(!m.num)f.push('número da casa (ou S/N)');if(!m.bai)f.push('bairro');if(!m.cid)f.push('cidade');if(!(m.loc&&isFinite(m.loc.lat)))f.push('localização (toque em 📍 Encontrar meu endereço)');else if(m.loc.ok===false)f.push('confirmar no mapa que o pino está na sua casa');return f};
 const wz=i=>{$('#aw').hidden=!i.value.includes('@')};
 const instTip='<p class="mu">Para instalar o app: no Android toque em "Instalar app" no topo; no iPhone toque em Compartilhar e depois em Adicionar à Tela de Início.</p>';
-const locBtn=`<button class="b w gpsb" onclick="gpsFill(r=>{cLoc=r.loc;fillAddr(r);mapaMostra(cLoc);autoSaveMe(r)})">📍 Encontrar meu endereço</button><p class="mu" style="margin:6px 0 0;font-size:13px">Use o GPS do celular: a entrega chega no lugar certo. Depois confira o ponto no mapa (dá para arrastar o marcador).</p><div id="mapa" class="mapa" hidden></div>`;
+const locBtn=`<button class="b w gpsb" onclick="gpsFill(r=>{cLoc=r.loc;fillAddr(r);mapaMostra(cLoc)})">📍 Encontrar meu endereço</button><p class="mu" style="margin:6px 0 0;font-size:13px">Use o GPS do celular e depois confirme no mapa (satélite) que o pino está na sua casa. Assim a entrega chega no lugar certo.</p><div id="mapa" class="mapa" hidden></div>`;
 async function entrar(){
   if(!sb)return alert('Sem conexão. Tente de novo com internet.');
   const em=authEmail($('#al').value);
@@ -1018,17 +1039,30 @@ async function mapaMostra(loc){
   const d=$('#mapa');if(!d||!loc)return;d.hidden=false;
   try{await leaflet()}catch(e){d.style.height='auto';d.innerHTML=`<a class="b s w" target="_blank" rel="noopener" href="${mapUrl(loc)}">Ver no mapa</a>`;return}
   if(LMAP){try{LMAP.remove()}catch(e){}LMAP=null}
-  LMAP=L.map(d,{zoomControl:true,attributionControl:true}).setView([loc.lat,loc.lng],18);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(LMAP);
-  LMK=L.marker([loc.lat,loc.lng],{draggable:true,icon:L.divIcon({className:'pino',html:'<div>📍</div>',iconSize:[40,40],iconAnchor:[20,38]})}).addTo(LMAP).bindTooltip('Arraste até a sua porta');
-  LMK.on('dragend',async()=>{
-    const p=LMK.getLatLng(),nl={lat:+p.lat.toFixed(6),lng:+p.lng.toFixed(6),acc:5,manual:true};cLoc=nl;
-    const c=$('#cl');if(c)c.textContent='📍 '+nl.lat+', '+nl.lng+' (ajustado no mapa)';
+  const sat=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:20,maxNativeZoom:18,attribution:'Imagens © Esri'});
+  const rua=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:20,maxNativeZoom:19,attribution:'© OpenStreetMap'});
+  LMAP=L.map(d,{zoomControl:true,attributionControl:true,layers:[sat]}).setView([loc.lat,loc.lng],18);
+  L.control.layers({'Satélite':sat,'Mapa':rua},null,{position:'topright'}).addTo(LMAP);
+  const circ=loc.acc>8&&!loc.manual?L.circle([loc.lat,loc.lng],{radius:loc.acc,color:'#1E4FD8',weight:1,fillOpacity:.12}).addTo(LMAP):null;
+  LMK=L.marker([loc.lat,loc.lng],{draggable:true,icon:L.divIcon({className:'pino',html:'<div>📍</div>',iconSize:[40,40],iconAnchor:[20,38]})}).addTo(LMAP);
+  const mover=async ll=>{
+    const nl={lat:+ll.lat.toFixed(6),lng:+ll.lng.toFixed(6),acc:3,manual:true,ok:true};cLoc=nl;LMK.setLatLng(ll);if(circ)LMAP.removeLayer(circ);
+    const c=$('#cl');if(c)c.textContent='📍 Marcado no mapa por você ('+nl.lat+', '+nl.lng+')';confBox();
     let r={};try{r=await revGeo(nl.lat,nl.lng)}catch(e){}
     const set=(id,v)=>{const e=$('#'+id);if(e&&v&&!e.dataset.mexeu)e.value=v};set('f-rua',r.rua);set('f-bai',r.bai);set('f-cid',r.cid);
-    toastMsg('📍 Ponto ajustado. Confira a rua e o número.');
-  });
+  };
+  LMK.on('dragend',()=>mover(LMK.getLatLng()));
+  LMAP.on('click',e=>mover(e.latlng));
   setTimeout(()=>LMAP&&LMAP.invalidateSize(),200);
+  confBox();
+}
+/* o cliente precisa confirmar que o pino está na casa dele */
+function confBox(){
+  let b=$('#mconf');const d=$('#mapa');if(!d)return;
+  if(!b){b=document.createElement('div');b.id='mconf';d.after(b)}
+  const l=cLoc||(me&&me.loc);if(!l){b.innerHTML='';return}
+  b.innerHTML=l.ok?`<div class="mok">✅ Local confirmado${l.manual?' (marcado por você)':' (±'+l.acc+' m)'}. Se não estiver na sua porta, toque no lugar certo do mapa.</div>`
+   :`<div class="mq"><b>O pino está na sua casa?</b><br><span class="mu">Use o modo Satélite para ver o telhado. Se não estiver certo, toque no lugar exato do mapa ou arraste o pino.</span><button class="b ok w" style="margin-top:8px" onclick="cLoc={...(cLoc||me.loc),ok:true};confBox()">✅ Sim, é aqui</button></div>`;
 }
 document.addEventListener('input',e=>{if(/^f-(rua|bai|cid)$/.test(e.target.id))e.target.dataset.mexeu=1});
 function renderAcc(){
