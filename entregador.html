@@ -9,7 +9,7 @@
 header{position:sticky;top:0;z-index:5;background:var(--ac);color:#fff;padding:calc(10px + env(safe-area-inset-top,0px)) 16px 10px;display:flex;align-items:center;gap:10px}
 header b{font-size:18px}header small{display:block;opacity:.85}header .sp{flex:1}
 .tabs{display:flex;gap:8px;padding:10px 16px 0;position:sticky;top:58px;background:var(--bg);z-index:4}
-.tabs button{flex:1;border:1.5px solid var(--bd);background:var(--card);color:var(--tx);border-radius:12px;padding:10px;font:700 15px inherit;font-family:inherit}
+.tabs button{flex:1;border:1.5px solid var(--bd);background:var(--card);color:var(--tx);border-radius:12px;padding:10px 4px;font:700 14.5px inherit;font-family:inherit}
 .tabs button.on{background:var(--ac);border-color:var(--ac);color:#fff}
 main{padding:10px 16px 90px;max-width:640px;margin:0 auto}
 .card{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:14px;margin:10px 0}
@@ -22,6 +22,9 @@ main{padding:10px 16px 90px;max-width:640px;margin:0 auto}
 .b{display:flex;align-items:center;justify-content:center;gap:6px;min-height:52px;border:0;border-radius:12px;background:var(--ac);color:#fff;font:800 16px inherit;font-family:inherit;text-decoration:none;cursor:pointer;padding:0 12px}
 .b.s{background:var(--card);color:var(--tx);border:1.5px solid var(--bd)}.b.ok{background:var(--ok)}.b.w{grid-column:1/-1}.b[disabled]{opacity:.5}
 details{margin-top:8px}summary{cursor:pointer;color:var(--ac);font-weight:700}ul{margin:6px 0;padding-left:20px}
+.res{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:10px 0}.res>div{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:10px;text-align:center}.res b{display:block;font-size:20px}.res small{color:var(--mu);font-size:12.5px}
+.res .sal{background:var(--ok2);border-color:transparent}.res .sal b{color:var(--ok)}
+.lin{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--bd)}.lin:last-child{border:0}
 .vazio{text-align:center;padding:40px 10px}.vazio div{font-size:50px}
 input{font:inherit;width:100%;padding:14px;border:1.5px solid var(--bd);border-radius:12px;background:var(--card);color:var(--tx);margin:6px 0;text-align:center;font-size:24px;letter-spacing:.15em;text-transform:uppercase}
 .err{color:var(--rd);font-weight:700;min-height:22px}
@@ -29,7 +32,7 @@ input{font:inherit;width:100%;padding:14px;border:1.5px solid var(--bd);border-r
 .toast{position:fixed;left:16px;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));background:#17202E;color:#fff;border-radius:12px;padding:12px 14px;font-weight:700;z-index:30;text-align:center}
 </style></head><body>
 <header><div><b id="hn">Entregas</b><small id="hs">Mercado Online</small></div><div class="sp"></div><button class="b s" style="min-height:40px;font-size:14px" onclick="carregar(true)">↻ Atualizar</button></header>
-<div class="tabs" id="tabs" hidden><button id="t1" class="on" onclick="aba='fila';desenhar()">Para entregar</button><button id="t2" onclick="aba='feitas';desenhar()">Entregues hoje</button></div>
+<div class="tabs" id="tabs" hidden><button id="t1" class="on" onclick="aba='fila';desenhar()">Entregar</button><button id="t2" onclick="aba='feitas';desenhar()">Hoje</button><button id="t3" onclick="aba='ganhos';desenhar()">💰 Ganhos</button></div>
 <main id="m"><div class="vazio"><div>🏍️</div><p class="mu">Carregando…</p></div></main>
 <script src="config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -37,7 +40,7 @@ input{font:inherit;width:100%;padding:14px;border:1.5px solid var(--bd);border-r
 const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const R=v=>'R$ '+(+v||0).toFixed(2).replace('.',','),dig=v=>String(v||'').replace(/\D/g,'');
 const MO=window.MO_CFG||{},sb=(window.supabase&&String(MO.sbUrl||'').startsWith('http'))?window.supabase.createClient(MO.sbUrl,MO.sbKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false,storageKey:'mo-entregador'}}):null;
-let EU=null,L=[],aba='fila',vistos=new Set(),primeira=true;
+let EU=null,L=[],G=null,aba='fila',vistos=new Set(),primeira=true;
 const toast=t=>{const b=document.createElement('div');b.className='toast';b.textContent=t;document.body.appendChild(b);setTimeout(()=>b.remove(),3500)};
 function bip(){try{const c=new (window.AudioContext||window.webkitAudioContext)();[0,.25].forEach((t,i)=>{const o=c.createOscillator(),g=c.createGain();o.frequency.value=i?1320:880;g.gain.setValueAtTime(.25,c.currentTime+t);g.gain.exponentialRampToValueAtTime(.001,c.currentTime+t+.3);o.connect(g);g.connect(c.destination);o.start(c.currentTime+t);o.stop(c.currentTime+t+.32)});if(navigator.vibrate)navigator.vibrate([200,100,200])}catch(e){}}
 async function sessao(){
@@ -69,6 +72,7 @@ async function carregar(manual){
   const r=await sb.rpc('entregador_pedidos');
   if(r.error){if(/ENTREGADOR/.test(r.error.message)){EU=null;return telaCodigo('Este celular foi desconectado pela loja. Peça um código novo.')}if(manual)toast('Sem internet agora.');return}
   L=r.data||[];
+  try{const g=await sb.rpc('entregador_resumo');if(!g.error)G=g.data}catch(e){}
   const novos=L.filter(o=>o.st=='conf'&&!vistos.has(o.id));novos.forEach(o=>vistos.add(o.id));
   if(novos.length&&!primeira){bip();toast('🔔 '+novos.length+' pedido(s) novo(s) para entregar')}
   primeira=false;desenhar();
@@ -94,12 +98,27 @@ function card(o){
    </div>`}
    <details><summary>Ver os itens</summary><ul>${(o.items||[]).map(i=>`<li>${esc(i.q)} ${esc(i.u||'un')} · ${esc(i.n)}</li>`).join('')}</ul></details></div>`;
 }
+/* resumo do dia e do mês, valor de cada entrega e saldo a receber da loja */
+function resumo(){
+  if(!G)return '';const vl=G.modo=='taxa'?'a taxa de entrega de cada pedido':R(G.valor)+' por entrega';
+  return `<div class="res"><div><small>Hoje</small><b>${G.hoje_n}</b><small>${R(G.hoje_v)}</small></div><div><small>No mês</small><b>${G.mes_n}</b><small>${R(G.mes_v)}</small></div><div class="sal"><small>A receber</small><b>${R(G.saldo)}</b><small>da loja</small></div></div>
+  <p class="mu" style="margin:0 0 4px;font-size:13.5px;text-align:center">Você ganha ${vl}.${+G.hoje_din?` Dinheiro recebido de clientes hoje: <b>${R(G.hoje_din)}</b> (prestar contas na loja).`:''}</p>`;
+}
+function ganhos(){
+  if(!G)return '<div class="vazio"><p class="mu">Carregando…</p></div>';
+  const dia=d=>new Date(d).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}),hr=d=>new Date(d).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  return resumo()+`<div class="card"><h3 style="margin:0 0 4px">Entregas do mês (${G.entregas.length})</h3>${G.entregas.length?G.entregas.map(x=>`<div class="lin"><span>${dia(x.date)} ${hr(x.date)} · ${esc(x.cn||'Cliente')}${x.bairro?' <span class="mu">· '+esc(x.bairro)+'</span>':''}</span><b>${R(x.valor)}</b></div>`).join(''):'<p class="mu">Nenhuma entrega neste mês.</p>'}
+  <div class="lin" style="font-size:17px"><span><b>Total do mês</b></span><b>${R(G.mes_v)}</b></div></div>
+  <div class="card"><h3 style="margin:0 0 4px">Pagamentos da loja</h3>${G.pagamentos.length?G.pagamentos.map(p=>`<div class="lin"><span>${dia(p.date)}${p.obs?' · '+esc(p.obs):''}</span><b style="color:var(--ok)">${R(p.valor)}</b></div>`).join(''):'<p class="mu">Nenhum pagamento registrado ainda.</p>'}
+  <div class="lin" style="font-size:17px"><span><b>Saldo a receber</b></span><b>${R(G.saldo)}</b></div></div>`;
+}
 function desenhar(){
-  if(!EU)return;$('#t1').classList.toggle('on',aba=='fila');$('#t2').classList.toggle('on',aba=='feitas');
+  if(!EU)return;$('#t1').classList.toggle('on',aba=='fila');$('#t2').classList.toggle('on',aba=='feitas');$('#t3').classList.toggle('on',aba=='ganhos');
   const fila=L.filter(o=>o.st=='conf').sort((a,b)=>((b.rota&&b.rota.id==EU.id)-(a.rota&&a.rota.id==EU.id))||String(a.date).localeCompare(String(b.date))),feitas=L.filter(o=>o.st=='ent');
-  $('#t1').textContent='Para entregar ('+fila.length+')';$('#t2').textContent='Entregues hoje ('+feitas.length+')';
+  $('#t1').textContent='Entregar ('+fila.length+')';$('#t2').textContent='Hoje ('+feitas.length+')';
+  if(aba=='ganhos'){$('#m').innerHTML=ganhos();return}
   const l=aba=='fila'?fila:feitas;
-  $('#m').innerHTML=l.length?l.map(card).join(''):`<div class="vazio"><div>${aba=='fila'?'😴':'📦'}</div><p class="mu">${aba=='fila'?'Nenhuma entrega agora. A lista atualiza sozinha.':'Nenhuma entrega feita hoje.'}</p></div>`;
+  $('#m').innerHTML=(aba=='feitas'?resumo():'')+(l.length?l.map(card).join(''):`<div class="vazio"><div>${aba=='fila'?'😴':'📦'}</div><p class="mu">${aba=='fila'?'Nenhuma entrega agora. A lista atualiza sozinha.':'Nenhuma entrega feita hoje.'}</p></div>`);
 }
 async function pegar(id){const r=await sb.rpc('entregador_pegar',{p_id:id});if(r.error)toast(r.error.message);else toast('Pedido com você. Boa entrega!');carregar()}
 async function soltar(id){await sb.rpc('entregador_soltar',{p_id:id});carregar()}
