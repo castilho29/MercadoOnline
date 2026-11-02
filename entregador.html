@@ -101,7 +101,7 @@ function card(o){
 /* resumo do dia e do mês, valor de cada entrega e saldo a receber da loja */
 function resumo(){
   if(!G)return '';const vl=G.modo=='taxa'?'a taxa de entrega de cada pedido':R(G.valor)+' por entrega';
-  return `<div class="res"><div><small>Hoje</small><b>${G.hoje_n}</b><small>${R(G.hoje_v)}</small></div><div><small>No mês</small><b>${G.mes_n}</b><small>${R(G.mes_v)}</small></div><div class="sal"><small>A receber</small><b>${R(G.saldo)}</b><small>da loja</small></div></div>
+  return `<div class="res"><div><small>Hoje</small><b>${G.hoje_n}</b><small>${R(G.hoje_v)}</small></div><div><small>No mês</small><b>${G.mes_n}</b><small>${R(G.mes_v)}</small></div>${+G.saldo>=0?`<div class="sal"><small>A receber</small><b>${R(G.saldo)}</b><small>da loja</small></div>`:`<div><small>Adiantado</small><b>${R(-G.saldo)}</b><small>a loja pagou a mais</small></div>`}</div>
   <p class="mu" style="margin:0 0 4px;font-size:13.5px;text-align:center">Você ganha ${vl}.${+G.hoje_din?` Dinheiro recebido de clientes hoje: <b>${R(G.hoje_din)}</b> (prestar contas na loja).`:''}</p>`;
 }
 function ganhos(){
@@ -110,7 +110,8 @@ function ganhos(){
   return resumo()+`<div class="card"><h3 style="margin:0 0 4px">Entregas do mês (${G.entregas.length})</h3>${G.entregas.length?G.entregas.map(x=>`<div class="lin"><span>${dia(x.date)} ${hr(x.date)} · ${esc(x.cn||'Cliente')}${x.bairro?' <span class="mu">· '+esc(x.bairro)+'</span>':''}</span><b>${R(x.valor)}</b></div>`).join(''):'<p class="mu">Nenhuma entrega neste mês.</p>'}
   <div class="lin" style="font-size:17px"><span><b>Total do mês</b></span><b>${R(G.mes_v)}</b></div></div>
   <div class="card"><h3 style="margin:0 0 4px">Pagamentos da loja</h3>${G.pagamentos.length?G.pagamentos.map(p=>`<div class="lin"><span>${dia(p.date)}${p.obs?' · '+esc(p.obs):''}</span><b style="color:var(--ok)">${R(p.valor)}</b></div>`).join(''):'<p class="mu">Nenhum pagamento registrado ainda.</p>'}
-  <div class="lin" style="font-size:17px"><span><b>Saldo a receber</b></span><b>${R(G.saldo)}</b></div></div>`;
+  <div class="lin" style="font-size:17px"><span><b>${+G.saldo>=0?'Saldo a receber':'Adiantado (a loja pagou a mais)'}</b></span><b>${R(Math.abs(+G.saldo||0))}</b></div>
+  <p class="mu" style="margin:6px 0 0;font-size:13px">Saldo = valor de todas as suas entregas − pagamentos que a loja já fez.</p></div>`;
 }
 function desenhar(){
   if(!EU)return;$('#t1').classList.toggle('on',aba=='fila');$('#t2').classList.toggle('on',aba=='feitas');$('#t3').classList.toggle('on',aba=='ganhos');
