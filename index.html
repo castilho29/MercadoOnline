@@ -455,7 +455,8 @@ const PASSOS=[['novo','Recebido'],['conf','Aceito'],['ent','Entregue']];
 function andamento(o){
   const k=stOf(o);if(k=='canc')return '<div class="and canc">✕ Pedido cancelado pela loja'+((o.canc&&(o.canc.motivo||o.canc.mot))||o.motivo?' · '+esc((o.canc&&(o.canc.motivo||o.canc.mot))||o.motivo):'')+'</div>';
   const n=PASSOS.findIndex(p=>p[0]==k);
-  const txt={novo:'Aguardando a loja aceitar o seu pedido',conf:o.ent=='retirada'?'Aceito! A loja está separando: retire na loja':'Aceito! A loja está separando e vai sair para entrega',ent:o.ent=='retirada'?'Retirado. Obrigado pela compra!':'Entregue. Obrigado pela compra!'}[k];
+  if(k=='conf'&&o.rota&&o.ent!='retirada')return `<div class="and">${PASSOS.map((p,x)=>`<span class="ps on"><i>${x<2?'✓':'🛵'}</i>${x==2?'A caminho':p[1]}</span>`).join('<b class="ln"></b>')}</div><div class="mu" style="margin:-2px 0 8px;font-weight:700;color:var(--ac)">🛵 Saiu para entrega${o.rota.nome?' com '+esc(o.rota.nome.split(' ')[0]):''}. Já já chega!</div>`;
+  const txt={novo:'Aguardando a loja aceitar o seu pedido',conf:o.ent=='retirada'?'Aceito! A loja está separando: retire na loja':'Aceito! A loja está separando e vai sair para entrega',ent:o.ent=='retirada'?'Retirado. Obrigado pela compra!':'Entregue'+(o.entregue&&o.entregue.por?' por '+esc(o.entregue.por.split(' ')[0]):'')+'. Obrigado pela compra!'}[k];
   return `<div class="and">${PASSOS.map((p,x)=>`<span class="ps ${x<=n?'on':''}"><i>${x<n||k=='ent'?'✓':x+1}</i>${p[1]}</span>`).join('<b class="ln"></b>')}</div><div class="mu" style="margin:-2px 0 8px;font-weight:600">${txt}</div>`;
 }
 function resumoMeus(l){
@@ -940,11 +941,11 @@ async function revGeo(lat,lng){
 function gpsFill(cb){
   getLoc(async loc=>{
     const b=document.createElement('div');b.className='gps';b.textContent='🔎 Buscando o nome da rua e do bairro…';document.body.appendChild(b);
-    let r={addr:'',ok:false};try{r=await revGeo(loc.lat,loc.lng)}catch(e){}
+    let r={addr:'',ok:false};try{r=await endSug(loc.lat,loc.lng)}catch(e){}
     b.remove();cb({loc,...r});
   });
 }
-function gpsToast(r){toastMsg(r.ok?'📍 Endereço encontrado. Confira e complete o número da casa.':r.addr?'📍 Só encontrei o bairro e a cidade. Complete a rua e o número.':'📍 Localização capturada, mas não achei o nome da rua. Digite o endereço.')}
+function gpsToast(r){const v=id=>($('#'+id)&&$('#'+id).value||'').trim();if($('#f-rua')){const rua=v('f-rua'),bai=v('f-bai');return toastMsg(rua&&bai?'📍 Encontrei: '+rua+' · '+bai+'. Confira e digite o número da casa.':rua?'📍 Rua encontrada. Escolha o BAIRRO e digite o número.':bai?'📍 Bairro encontrado. Digite a rua e o número.':'📍 Localização marcada. Digite a rua, o número e o bairro.')}toastMsg(r.ok?'📍 Endereço encontrado. Confira e complete o número da casa.':r.addr?'📍 Só encontrei o bairro e a cidade. Complete a rua e o número.':'📍 Localização capturada, mas não achei o nome da rua. Digite o endereço.')}
 async function getSes(){
   if(!sb)return null;
   try{const {data}=await sb.auth.getSession();if(data.session)return data.session}catch(e){}
@@ -956,10 +957,27 @@ const composeAddr=f=>{let s=(f.rua||'')+(f.rua&&f.num?', '+f.num:'');if(f.bai)s+
 const addrFields=m=>{
   const lg=m.a&&!m.rua;
   return `<label>Rua / Avenida *</label><input id="f-rua" value="${esc(lg?m.a:m.rua)}" autocomplete="address-line1">
-  <div class="g2"><div><label>Número * <small class="mu">(ou S/N)</small></label><input id="f-num" value="${esc(m.num)}" autocomplete="address-line2"></div><div><label>Bairro *</label><input id="f-bai" value="${esc(m.bai)}"></div></div>
+  <div class="g2"><div><label>Número * <small class="mu">(ou S/N)</small></label><input id="f-num" value="${esc(m.num)}" autocomplete="address-line2"></div><div><label>Bairro *</label>${baiOpts().length?`<select id="f-bai-s" onchange="baiSel(this.value)"><option value="">Escolha o bairro</option>${baiOpts().map(b=>`<option ${norm(b)==norm(m.bai)?'selected':''}>${esc(b)}</option>`).join('')}<option value="__outro" ${m.bai&&!baiOpts().some(b=>norm(b)==norm(m.bai))?'selected':''}>Outro bairro…</option></select>`:''}<input id="f-bai" value="${esc(m.bai)}" ${baiOpts().length&&(!m.bai||baiOpts().some(b=>norm(b)==norm(m.bai)))?'hidden':''} placeholder="Nome do bairro"></div></div>
   <label>Cidade / UF *</label><input id="f-cid" value="${esc(lg?'':(m.cid||EMP.c))}">
   <label>Observação / ponto de referência</label><textarea id="f-ref" rows="2" placeholder="Ex.: casa azul, portão de ferro, perto da farmácia">${esc(m.ref)}</textarea>`;
 };
+/* bairros: os da própria loja (lista das taxas de entrega), para não aparecer bairro errado do mapa público */
+const norm=x=>String(x||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
+const baiOpts=()=>[...new Set((EMP.taxas||[]).map(t=>String(t.b||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
+function baiSel(v){const i=$('#f-bai');if(!i)return;if(v=='__outro'){i.hidden=false;i.value='';i.focus()}else{i.hidden=true;i.value=v}}
+function setBai(nome,forcar){
+  const s=$('#f-bai-s'),i=$('#f-bai');if(!i||!nome)return false;if(i.dataset.mexeu&&!forcar)return false;
+  if(!s){i.value=nome;return true}
+  const o=baiOpts().find(b=>norm(b)==norm(nome));if(!o)return false;   // bairro do mapa que não é da lista: não chuta
+  s.value=o;i.value=o;i.hidden=true;return true;
+}
+/* endereço pelo ponto: 1º os vizinhos que já confirmaram o endereço (banco da loja), depois o mapa público */
+async function endSug(lat,lng){
+  let r={};try{r=await revGeo(lat,lng)}catch(e){}
+  try{if(sb&&!(await getSes()))await sb.auth.signInAnonymously()}catch(e){}   // cadastro sem senha: o acesso já nasce aqui
+  try{if(sb){const {data}=await sb.rpc('sugerir_endereco',{p_lat:lat,p_lng:lng});if(data){if(data.rua&&(data.rua_m<=40||!r.rua))r.rua=data.rua;if(data.bai)r.bai2=data.bai}}}catch(e){}
+  return r;
+}
 const readAddr=()=>{const g=i=>($('#'+i)?$('#'+i).value:'').trim(),f={rua:g('f-rua'),num:g('f-num'),bai:g('f-bai'),cid:g('f-cid'),ref:g('f-ref')};f.a=composeAddr(f);return f};
 /* CADASTRO SEM SENHA: o app cria uma conta só deste celular (login anônimo do Supabase) e fica
    sempre conectado. Não existe "entrar com o WhatsApp": senão qualquer um que soubesse o número
@@ -1017,7 +1035,7 @@ async function saveMe(){
 function fillAddr(r){
   const p=$('#cl');if(p)p.textContent='📍 '+r.loc.lat+', '+r.loc.lng+(r.loc.acc?' (±'+r.loc.acc+' m)':'');
   const set=(id,v)=>{const e=$('#'+id);if(e&&v)e.value=v};
-  if($('#f-rua')){set('f-rua',r.rua);set('f-num',r.num);set('f-bai',r.bai);set('f-cid',r.cid)}
+  if($('#f-rua')){set('f-rua',r.rua);set('f-num',r.num);if(!setBai(r.bai2,true)&&!setBai(r.bai,true)&&!$('#f-bai-s'))set('f-bai',r.bai2||r.bai);set('f-cid',r.cid)}
   else{const t=$('#ca');if(t&&r.addr)t.value=r.addr}
   gpsToast(r);
 }
@@ -1048,8 +1066,8 @@ async function mapaMostra(loc){
   const mover=async ll=>{
     const nl={lat:+ll.lat.toFixed(6),lng:+ll.lng.toFixed(6),acc:3,manual:true,ok:true};cLoc=nl;LMK.setLatLng(ll);if(circ)LMAP.removeLayer(circ);
     const c=$('#cl');if(c)c.textContent='📍 Marcado no mapa por você ('+nl.lat+', '+nl.lng+')';confBox();
-    let r={};try{r=await revGeo(nl.lat,nl.lng)}catch(e){}
-    const set=(id,v)=>{const e=$('#'+id);if(e&&v&&!e.dataset.mexeu)e.value=v};set('f-rua',r.rua);set('f-bai',r.bai);set('f-cid',r.cid);
+    let r={};try{r=await endSug(nl.lat,nl.lng)}catch(e){}
+    const set=(id,v)=>{const e=$('#'+id);if(e&&v&&!e.dataset.mexeu)e.value=v};set('f-rua',r.rua);if(!setBai(r.bai2)&&!setBai(r.bai)&&!$('#f-bai-s'))set('f-bai',r.bai2||r.bai);set('f-cid',r.cid);
   };
   LMK.on('dragend',()=>mover(LMK.getLatLng()));
   LMAP.on('click',e=>mover(e.latlng));
@@ -1065,6 +1083,7 @@ function confBox(){
    :`<div class="mq"><b>O pino está na sua casa?</b><br><span class="mu">Use o modo Satélite para ver o telhado. Se não estiver certo, toque no lugar exato do mapa ou arraste o pino.</span><button class="b ok w" style="margin-top:8px" onclick="cLoc={...(cLoc||me.loc),ok:true};confBox()">✅ Sim, é aqui</button></div>`;
 }
 document.addEventListener('input',e=>{if(/^f-(rua|bai|cid)$/.test(e.target.id))e.target.dataset.mexeu=1});
+document.addEventListener('change',e=>{if(e.target.id=='f-bai-s'){const i=$('#f-bai');if(i)i.dataset.mexeu=1}});
 function renderAcc(){
   const b=$('#acc');if(!b)return;
   b.hidden=!CUST;b.classList.toggle('on',tab=='eu');
