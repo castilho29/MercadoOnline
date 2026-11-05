@@ -31,6 +31,7 @@ button.w{width:100%}
 .q button{width:36px;height:36px;border-radius:50%;border:1px solid var(--ac);background:var(--card);color:var(--ac);font-size:20px;font-weight:700}
 .tot{font:700 20px Georgia,serif}
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.mpbox{border:2px solid #00A0E3;border-radius:14px;padding:12px;margin:8px 0;background:var(--card)}.mpbox h4{margin:0 0 6px;font-size:16px}.mpbox img{display:block;width:190px;height:190px;margin:6px auto;image-rendering:pixelated}.mpbox textarea{width:100%;font-size:12px}.mpcd{font-weight:800;color:var(--ac)}.mppg{display:inline-block;background:#E6F6EE;color:#178A4E;border-radius:8px;padding:2px 8px;font-weight:800;font-size:12.5px}
 .tag{display:inline-block;padding:2px 8px;border-radius:6px;background:var(--yl);color:#333;font-size:12px;font-weight:700}
 .tag.ok{background:var(--ac);color:#fff}
 .gpsm{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px}.gbx{background:var(--card);color:var(--tx);border-radius:16px;padding:18px;max-width:420px;width:100%}
@@ -340,7 +341,8 @@ function vCart(){
   <button class="b s w" onclick="gpsFill(r=>{co.loc=r.loc;if(r.addr)co.addr=r.addr;render();gpsToast(r)})">📍 ${co.loc?'Atualizar localização':'Usar minha localização'}</button>
   ${co.loc?`<p class="mu">Local: <a target="_blank" rel="noopener" href="${mapUrl(co.loc)}">${co.loc.lat}, ${co.loc.lng}</a>${co.loc.acc?' (±'+co.loc.acc+' m)':''}</p>`:''}
   <label style="display:block;margin-top:10px">Forma de pagamento</label>
-  <select onchange="co.pay=this.value;render()">${['Dinheiro','Pix','Cartão'].map(x=>`<option ${co.pay==x?'selected':''}>${x}</option>`).join('')}</select>
+  <select onchange="co.pay=this.value;render()">${[...(CUST&&EMP.mpApp?[['Online',EMP.ipApp?'💳 Pagar agora com Mercado Pago (Pix ou cartão)':'💳 Pagar agora pelo app (Pix ou cartão)']]:[]),...(CUST&&EMP.ipApp?[['OnlineIP',EMP.mpApp?'🟢 Pagar agora com InfinitePay (Pix ou cartão até 12x)':'💳 Pagar agora pelo app (Pix ou cartão até 12x)']]:[]),['Dinheiro','Dinheiro na entrega'],['Pix','Pix na entrega'],['Cartão','Cartão na entrega']].map(([x,t])=>`<option value="${x}" ${co.pay==x?'selected':''}>${CUST?t:x}</option>`).join('')}</select>
+  ${co.pay=='Online'?'<p class="mu">💳 Ao enviar o pedido aparece o Pix (copia e cola) e o botão para pagar com cartão. A loja recebe o pedido assim que o pagamento cair.</p>':co.pay=='OnlineIP'?'<p class="mu">🟢 Ao enviar o pedido aparece o botão para pagar na página segura da InfinitePay (Pix ou cartão). Depois de pagar você volta para cá e a loja recebe o pedido.</p>':''}
   ${co.pay=='Pix'&&EMP.pix?'<p class="mu">💠 O código Pix (copia e cola) e o QR Code aparecem ao enviar o pedido.</p>':''}${co.pay=='Dinheiro'?`<label>Troco para quanto? (deixe vazio se não precisa)</label><input type="number" inputmode="decimal" min="0" step="0.01" value="${esc(co.cash)}" oninput="co.cash=this.value;trocoTxt()"><p id="tr" class="mu"></p>`:''}
   <label>Observações</label><input value="${esc(co.obs)}" oninput="co.obs=this.value" placeholder="Ex.: portão azul">
   <div class="row"><span>Total</span><span class="tot">${R(total())}</span></div><br>
@@ -453,14 +455,14 @@ vCart=function(){
 /* ===== MEUS PEDIDOS (cliente): resumo, andamento e histórico ===== */
 const PASSOS=[['novo','Recebido'],['conf','Aceito'],['ent','Entregue']];
 function andamento(o){
-  const k=stOf(o);if(k=='canc')return '<div class="and canc">✕ Pedido cancelado pela loja'+((o.canc&&(o.canc.motivo||o.canc.mot))||o.motivo?' · '+esc((o.canc&&(o.canc.motivo||o.canc.mot))||o.motivo):'')+'</div>';
+  const k=stOf(o);if(k=='pagar')return mpPainel(o);if(k=='canc')return '<div class="and canc">✕ Pedido cancelado pela loja'+((o.canc&&(o.canc.motivo||o.canc.mot))||o.motivo?' · '+esc((o.canc&&(o.canc.motivo||o.canc.mot))||o.motivo):'')+'</div>';
   const n=PASSOS.findIndex(p=>p[0]==k);
   if(k=='conf'&&o.rota&&o.ent!='retirada')return `<div class="and">${PASSOS.map((p,x)=>`<span class="ps on"><i>${x<2?'✓':'🛵'}</i>${x==2?'A caminho':p[1]}</span>`).join('<b class="ln"></b>')}</div><div class="mu" style="margin:-2px 0 8px;font-weight:700;color:var(--ac)">🛵 Saiu para entrega${o.rota.nome?' com '+esc(o.rota.nome.split(' ')[0]):''}. Já já chega!</div>`;
   const txt={novo:'Aguardando a loja aceitar o seu pedido',conf:o.ent=='retirada'?'Aceito! A loja está separando: retire na loja':'Aceito! A loja está separando e vai sair para entrega',ent:o.ent=='retirada'?'Retirado. Obrigado pela compra!':'Entregue'+(o.entregue&&o.entregue.por?' por '+esc(o.entregue.por.split(' ')[0]):'')+'. Obrigado pela compra!'}[k];
   return `<div class="and">${PASSOS.map((p,x)=>`<span class="ps ${x<=n?'on':''}"><i>${x<n||k=='ent'?'✓':x+1}</i>${p[1]}</span>`).join('<b class="ln"></b>')}</div><div class="mu" style="margin:-2px 0 8px;font-weight:600">${txt}</div>`;
 }
 function resumoMeus(l){
-  const ok=l.filter(o=>stOf(o)!='canc'),tot=ok.reduce((s,o)=>s+(+o.total||0),0),abertos=l.filter(o=>['novo','conf'].includes(stOf(o))).length;
+  const ok=l.filter(o=>stOf(o)!='canc'),tot=ok.reduce((s,o)=>s+(+o.total||0),0),abertos=l.filter(o=>['novo','conf','pagar'].includes(stOf(o))).length;
   const mes=new Date().toISOString().slice(0,7),noMes=ok.filter(o=>String(o.date).slice(0,7)==mes);
   return `<div class="card resm"><div><b>${ok.length}</b><span>pedido${ok.length==1?'':'s'} feito${ok.length==1?'':'s'}</span></div><div><b>${R(tot)}</b><span>total comprado</span></div><div><b>${noMes.length}</b><span>neste mês · ${R(noMes.reduce((s,o)=>s+(+o.total||0),0))}</span></div>${abertos?`<div class="full">🕒 ${abertos} pedido${abertos>1?'s':''} em andamento</div>`:''}</div>`;
 }
@@ -468,10 +470,10 @@ function mineHtml(l){
   if(!l.length)return '<div class="card"><p class="mu">Você ainda não fez pedidos.</p></div>';
   const card=o=>`<div class="card"><div class="row"><div><b>${R(o.total)}</b><div class="mu" style="font-size:13px">Pedido #${esc(String(o.id).slice(-4).toUpperCase())} · ${new Date(o.date).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'})}</div></div>${stTag(o)}</div>
   ${andamento(o)}
-  <details><summary class="mu" style="cursor:pointer">${o.items.length} ite${o.items.length==1?'m':'ns'} · ${esc(o.pay)}${o.ent=='retirada'?' · retirada na loja':(o.taxa?' · entrega '+R(o.taxa):' · entrega')}</summary>
+  <details><summary class="mu" style="cursor:pointer">${o.items.length} ite${o.items.length==1?'m':'ns'} · ${o.mp&&o.mp.st=='pago'?'<span class="mppg">✓ Pago no app ('+esc(o.mp.tipo||'Pix')+')</span>':o.mp&&o.mp.st=='estornado'?'Pagamento devolvido':esc(o.pay=='Online'?'Pagar pelo app':o.pay)}${o.ent=='retirada'?' · retirada na loja':(o.taxa?' · entrega '+R(o.taxa):' · entrega')}</summary>
   <p>${o.items.map(i=>`${i.q}× ${esc(i.n)} <span class="mu">${R((+i.p||0)*(+i.q||0))}</span>`).join('<br>')}${o.taxa?`<br><span class="mu">Taxa de entrega ${R(o.taxa)}</span>`:''}${o.troco?`<br><span class="mu">Troco para ${R(o.cash)}</span>`:''}</p></details>
   ${o.pay=='Pix'&&EMP.pix&&(stOf(o)=='novo'||stOf(o)=='conf')?`<button class="b ok w" style="margin:8px 0" onclick="showPix('${o.id}')">💠 Pagar com Pix</button>`:''}<button class="b s w" style="margin-top:8px" onclick="repetir('${o.id}')">🔁 Repetir este pedido</button></div>`;
-  const ab=l.filter(o=>['novo','conf'].includes(stOf(o))),hist=l.filter(o=>!['novo','conf'].includes(stOf(o)));
+  const ab=l.filter(o=>['novo','conf','pagar'].includes(stOf(o))),hist=l.filter(o=>!['novo','conf','pagar'].includes(stOf(o)));
   return resumoMeus(l)+(ab.length?'<h3 class="sec">Em andamento</h3>'+ab.map(card).join(''):'')+(hist.length?'<h3 class="sec">Histórico</h3>'+hist.map(card).join(''):'');
 }
 function vMeus(){setTimeout(loadMeus,0);return '<h2>Meus pedidos</h2><div id="mp">'+mineHtml(S.mine)+'</div>';}
@@ -557,6 +559,7 @@ async function finishC(){
   let o={id:rid(),cid:user.id,date:new Date().toISOString(),cn:me.n,ph:me.t,addr:co.ent=='retirada'?'Retirada na loja':co.addr.trim(),loc:co.loc||null,
     items:it.map(x=>({pid:x.p.id,n:x.p.n,u:x.p.u,p:x.p.p,q:x.qt})),total:t,sub:total(),taxa:taxaAtual(),bairro:bairroNome(),ent:co.ent||'entrega',pay:co.pay,cash:co.pay=='Dinheiro'?cash:0,
     troco:co.pay=='Dinheiro'&&cash?cash-t:0,obs:co.obs,done:false,st:'novo',canal:'app'};
+  if(String(o.pay).startsWith('Online')){o.gw=o.pay=='OnlineIP'?'ip':'mp';o.pay='Online'}
   const res=await sb.rpc('criar_pedido',{p_id:o.id,p_data:o});
   const error=res.error;
   if(error){
@@ -567,7 +570,8 @@ async function finishC(){
   }
   if(res.data&&res.data.id){if(Math.abs(res.data.total-o.total)>0.009)alert('Alguns preços mudaram. Total atualizado: '+R(res.data.total));o=res.data}
   S.mine.unshift(o);loadProducts();S.cart={};co={cid:'',addr:'',loc:null,pay:'Dinheiro',cash:'',obs:''};save();
-  if(o.pay=='Pix'&&EMP.pix){go('meus');showPix(o,true)}else{alert('Pedido enviado! A loja vai entrar em contato.');go('meus')}
+  if(o.pay=='Online'){go('meus');toastMsg(o.gw=='ip'?'Pedido criado! Em instantes aparece o botão para pagar com a InfinitePay.':'Pedido criado! Agora é só pagar: o Pix aparece em instantes.')}
+  else if(o.pay=='Pix'&&EMP.pix){go('meus');showPix(o,true)}else{alert('Pedido enviado! A loja vai entrar em contato.');go('meus')}
 }
 vMeus=function(){
   if(!user)return '<div class="card"><p class="mu">Entre na sua conta para ver seus pedidos.</p><button class="b" onclick="go(\'eu\')">Entrar</button></div>';
@@ -576,16 +580,54 @@ vMeus=function(){
 async function loadMeus(){
   if(!sb||!user)return;
   const {data,error}=await sb.from('orders').select('data').order('updated_at',{ascending:false}).limit(500);
-  if(!error&&data){S.mine=data.map(r=>r.data).filter(Boolean).sort((a,b)=>String(b.date).localeCompare(String(a.date)));loc();const e=$('#mp');if(e)e.innerHTML=mineHtml(S.mine)}
+  if(!error&&data){const antes=Object.fromEntries((S.mine||[]).map(o=>[o.id,stOf(o)]));S.mine=data.map(r=>r.data).filter(Boolean).sort((a,b)=>String(b.date).localeCompare(String(a.date)));loc();
+    for(const o of S.mine)if(antes[o.id]=='pagar'&&stOf(o)!='pagar'&&!mpVisto[o.id]){mpVisto[o.id]=1;toastMsg(o.mp&&o.mp.st=='pago'?'✅ Pagamento confirmado! O pedido foi para a loja.':stOf(o)=='canc'?'O tempo para pagar acabou e o pedido foi cancelado.':'Pedido enviado para a loja.')}
+    const e=$('#mp');if(e){const ab=[...e.querySelectorAll('details[data-mq][open]')].map(d=>d.dataset.mq);e.innerHTML=mineHtml(S.mine);ab.forEach(id=>{const d=e.querySelector(`details[data-mq="${id}"]`);if(d)d.open=true})}}
 }
 /* status atualiza sozinho enquanto o cliente olha os pedidos */
-setInterval(()=>{if(CUST&&tab=='meus'&&!document.hidden)loadMeus()},20000);
+setInterval(()=>{if(CUST&&tab=='meus'&&!document.hidden&&!(S.mine||[]).some(o=>stOf(o)=='pagar'))loadMeus()},20000);
+/* pagamento pelo app (Mercado Pago): confere a cada 4 s enquanto há pedido aguardando pagamento */
+setInterval(()=>{if(CUST&&tab=='meus'&&!document.hidden&&(S.mine||[]).some(o=>stOf(o)=='pagar'))loadMeus()},4000);
+setInterval(()=>{document.querySelectorAll('[data-exp]').forEach(e=>{const s=Math.max(0,Math.round((Date.parse(e.dataset.exp)-Date.now())/1000));e.textContent=s?Math.floor(s/60)+':'+String(s%60).padStart(2,'0'):'0:00'})},1000);
+let mpVisto={};
+function mpPainel(o){
+  const m=o.mp||{},idade=(Date.now()-Date.parse(o.date))/1000;
+  if((m.gw||o.gw)=='ip')return ipPainel(o,m,idade);
+  if(!m.qr&&!m.link)return `<div class="mpbox"><h4>💳 Preparando o pagamento…</h4><p class="mu" style="margin:0">${idade>120?'A loja está demorando para gerar o pagamento. Você pode esperar mais um pouco ou pagar na entrega.':'Em instantes aparece o Pix e o botão do cartão.'}</p>${idade>120?`<button class="b s w" style="margin-top:8px" onclick="mpTrocar('${o.id}')">Prefiro pagar na entrega</button>`:''}</div>`;
+  return `<div class="mpbox"><h4>💳 Pague para enviar o pedido à loja</h4>
+   <p class="mu" style="margin:0 0 6px">Valor <b>${R(m.v||o.total)}</b>${m.exp?` · vence em <span class="mpcd" data-exp="${esc(m.exp)}"></span>`:''}</p>
+   ${m.qr?`<button class="b ok w" onclick="mpCopiar('${o.id}')">💠 Copiar código Pix</button><p class="mu" style="font-size:13px;margin:6px 0">No app do seu banco: <b>Pix › Pix Copia e Cola</b>, cole e confirme.</p>
+   <details data-mq="${o.id}"><summary class="mu" style="cursor:pointer">Mostrar QR Code (para pagar com outro celular)</summary>${mpQr(m)}<textarea readonly rows="3" onclick="this.select()">${esc(m.qr)}</textarea></details>`:''}
+   ${m.link?`<a class="b s w" style="margin-top:8px" href="${esc(m.link)}" target="_blank" rel="noopener">💳 Pagar com cartão de crédito ou débito</a>`:''}
+   <p class="mu" style="font-size:12.5px;margin:8px 0 0">Pagamento seguro pelo Mercado Pago. A confirmação é automática: não precisa mandar comprovante.</p>
+   <button class="b s w" style="margin-top:8px;min-height:40px;font-size:14px" onclick="mpTrocar('${o.id}')">Prefiro pagar na entrega</button></div>`;
+}
+function ipPainel(o,m,idade){
+  if(m.ret&&m.ret.tnsu)return `<div class="mpbox"><h4>⏳ Conferindo o seu pagamento…</h4><p class="mu" style="margin:0">A loja está confirmando com a InfinitePay. Leva poucos segundos.</p></div>`;
+  if(!m.link)return `<div class="mpbox"><h4>🟢 Preparando o pagamento…</h4><p class="mu" style="margin:0">${idade>120?'A loja está demorando para gerar o pagamento. Você pode esperar mais um pouco ou pagar na entrega.':'Em instantes aparece o botão para pagar.'}</p>${idade>120?`<button class="b s w" style="margin-top:8px" onclick="mpTrocar('${o.id}')">Prefiro pagar na entrega</button>`:''}</div>`;
+  return `<div class="mpbox" style="border-color:#00C26A"><h4>🟢 Pague para enviar o pedido à loja</h4>
+   <p class="mu" style="margin:0 0 6px">Valor <b>${R(m.v||o.total)}</b>${m.exp?` · vence em <span class="mpcd" data-exp="${esc(m.exp)}"></span>`:''}</p>
+   <a class="b ok w" href="${esc(m.link)}" rel="noopener">Pagar com InfinitePay (Pix ou cartão)</a>
+   <p class="mu" style="font-size:12.5px;margin:8px 0 0">Você vai para a página segura da InfinitePay. Depois de pagar, volta para cá sozinho e a loja confere o pagamento. Não precisa mandar comprovante.</p>
+   <button class="b s w" style="margin-top:8px;min-height:40px;font-size:14px" onclick="mpTrocar('${o.id}')">Prefiro pagar na entrega</button></div>`;
+}
+function mpQr(m){const q=m.qr&&qrMatrix(m.qr);if(q){const n=q.length,mg=4;let d='';for(let r=0;r<n;r++)for(let c=0;c<n;c++)if(q[r][c])d+=`M${c+mg} ${r+mg}h1v1h-1z`;return `<svg viewBox="0 0 ${n+2*mg} ${n+2*mg}" shape-rendering="crispEdges" style="display:block;width:200px;height:200px;margin:6px auto;background:#fff" role="img" aria-label="QR Code Pix"><path d="${d}" fill="#000"/></svg>`}return m.qr64?`<img alt="QR Code Pix" src="data:image/png;base64,${m.qr64}">`:''}
+function mpCopiar(id){const o=(S.mine||[]).find(x=>x.id==id),c=o&&o.mp&&o.mp.qr;if(!c)return;(navigator.clipboard?navigator.clipboard.writeText(c):Promise.reject()).then(()=>toastMsg('Código Pix copiado! Cole no app do seu banco.')).catch(()=>prompt('Copie o código Pix:',c))}
+async function mpTrocar(id){
+  const o=(S.mine||[]).find(x=>x.id==id);if(!o)return;
+  const f=prompt('Como vai pagar na entrega? Digite 1 para Dinheiro, 2 para Pix ou 3 para Cartão','1');if(f==null)return;
+  const pay={1:'Dinheiro',2:'Pix',3:'Cartão'}[String(f).trim()];if(!pay)return alert('Opção inválida.');
+  let cash=0;if(pay=='Dinheiro'){const t=prompt('Troco para quanto? (deixe vazio se não precisa)','');if(t==null)return;cash=parseFloat(String(t).replace(',','.'))||0;if(cash&&cash<o.total)return alert('O valor para troco é menor que o total.')}
+  const {data,error}=await sb.rpc('pedido_pagar_na_entrega',{p_id:id,p_pay:pay,p_cash:cash});
+  if(error)return alert(/não está aguardando/.test(error.message)?'Este pedido já foi pago ou não espera mais pagamento.':'Não foi possível mudar: '+error.message);
+  toastMsg('Pronto! O pedido foi para a loja com pagamento na entrega.');loadMeus();
+}
 
 /* ===== PAINEL DA LOJA x APP DO CLIENTE ===== */
 const APP=document.documentElement.dataset.app||'cliente';let isAdmin=false;
 const adm=()=>'';
 const stOf=o=>o.st||(o.done?'ent':'novo');
-const stTag=o=>{const k=stOf(o);return `<span class="tag ${k=='conf'||k=='ent'?'ok':''}" ${k=='canc'?'style="background:var(--rd);color:#fff"':''}>${({novo:'Aguardando a loja',conf:'Aceito',ent:'Entregue',canc:'Cancelado'})[k]}</span>`};
+const stTag=o=>{const k=stOf(o);return `<span class="tag ${k=='conf'||k=='ent'?'ok':''}" ${k=='canc'?'style="background:var(--rd);color:#fff"':''}>${({novo:'Aguardando a loja',conf:'Aceito',ent:'Entregue',canc:'Cancelado',pagar:'Aguardando pagamento'})[k]||k}</span>`};
 function navT(){return CUST?{loja:'Loja',cart:'Carrinho',meus:'Pedidos'}:{ped:'Pedidos',loja:'Balcão',prod:'Produtos',cli:'Clientes',cx:'Caixa',cfg:'Ajustes'}}
 const ICO={
   loja:'<path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',
@@ -671,11 +713,23 @@ async function init(){
   }
   if(ses){user=ses.user;const {data:ok}=await sb.rpc('sou_admin');isAdmin=!!ok}
   CUST=true;tab='loja';me=null;
-  if(needInstall())showGate();
+  const ipr=await ipRetorno();
+  if(!ipr&&needInstall())showGate();
   await loadCfg();applyEmp();if(tel()){$('#wa').href='https://wa.me/'+waNum(tel());$('#wa').hidden=false}
   render();await loadProducts();if(user)await loadMe();
   if(bloqueado())tab='eu';
+  if(ipr&&user){tab='meus'}
   render();
+}
+/* volta da página de pagamento da InfinitePay: anota os códigos no pedido; quem confirma é a loja */
+async function ipRetorno(){
+  const q=new URLSearchParams(location.search);if(!q.get('ipret')&&!q.get('transaction_nsu'))return false;
+  const id=q.get('p')||q.get('order_nsu')||'',tn=q.get('transaction_nsu')||'',sl=q.get('slug')||'';
+  try{history.replaceState(null,'',location.pathname)}catch(e){}
+  if(!sb||!id)return false;
+  if(tn&&sl){try{await sb.rpc('pedido_retorno_ip',{p_id:id,p_slug:sl,p_tnsu:tn})}catch(e){}setTimeout(()=>toastMsg('Recebemos o seu pagamento. Conferindo com a InfinitePay…'),800)}
+  else setTimeout(()=>toastMsg('Pagamento não concluído. Você pode tentar de novo em Pedidos.'),800);
+  return true;
 }
 
 /* ===== ALARME QUE INSISTE + IMPRESSÃO A4 / BOBINA 80 mm ===== */
