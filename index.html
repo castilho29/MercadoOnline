@@ -482,15 +482,15 @@ let cat='',ord='az',lim=60;
 const catList=()=>{const m={};S.products.forEach(p=>{const c=(p.c||'SEM CATEGORIA').toUpperCase();m[c]=(m[c]||0)+1});return Object.entries(m).sort((a,b)=>a[0].localeCompare(b[0],'pt-BR'))};
 const qtyBtn=p=>soldOut(p)?'<button class="b w" disabled>Indisponível</button>':S.cart[p.id]?`<div class="q" style="justify-content:center"><button onclick="add('${p.id}',-1)" aria-label="Menos">−</button><b>${S.cart[p.id]}</b><button onclick="add('${p.id}',1)" aria-label="Mais">+</button></div>`:`<button class="b w" onclick="add('${p.id}',1)">Adicionar</button>`;
 listHtml=function(){
-  const t=q.toLowerCase(),l=S.products.filter(p=>(!cat||(p.c||'SEM CATEGORIA').toUpperCase()==cat)&&(p.n+' '+(p.cod||'')+' '+(p.bar||'')).toLowerCase().includes(t));
+  const t=q.toLowerCase(),l=S.products.filter(p=>(!cat||(p.c||'SEM CATEGORIA').toUpperCase()==cat)&&(p.n+' '+(p.marca||'')+' '+(p.cod||'')+' '+(p.bar||'')).toLowerCase().includes(t));
   l.sort((a,b)=>(soldOut(a)-soldOut(b))||(ord=='az'?a.n.localeCompare(b.n,'pt-BR'):ord=='za'?b.n.localeCompare(a.n,'pt-BR'):ord=='lo'?a.p-b.p:b.p-a.p));
   if(!l.length)return '<p class="mu">Nenhum produto encontrado.</p>';
-  return '<div class="pg">'+l.slice(0,lim).map(p=>`<div class="pcard${soldOut(p)?' off':''}"><div class="pimg">${soldOut(p)?'<span class="sold">Indisponível</span>':''}${p.img?`<img alt="" src="${p.img}">`:'🛒'}</div><div class="pname">${esc(p.n)}</div>${p.cod?`<div class="mu" style="font-size:12px">(Código ${esc(p.cod)})</div>`:''}<div class="pprice">${R(p.p)}<span class="mu" style="font:13px sans-serif"> / ${esc(p.u)}</span></div>${lowTag(p)}${qtyBtn(p)}</div>`).join('')+'</div>'+(l.length>lim?`<button class="b s w" onclick="lim+=60;$('#pl').innerHTML=listHtml()">Mostrar mais (${l.length-lim})</button>`:'');
+  return '<div class="pg">'+l.slice(0,lim).map(p=>`<div class="pcard${soldOut(p)?' off':''}"><div class="pimg">${soldOut(p)?'<span class="sold">Indisponível</span>':''}${p.img?`<img alt="" src="${p.img}">`:'🛒'}</div><div class="pname">${esc(p.n)}</div>${p.marca?`<div class="mu" style="font-size:12.5px;font-weight:600">${esc(p.marca)}</div>`:''}${p.cod?`<div class="mu" style="font-size:12px">(Código ${esc(p.cod)})</div>`:''}<div class="pprice">${R(p.p)}<span class="mu" style="font:13px sans-serif"> / ${esc(p.u)}</span></div>${lowTag(p)}${qtyBtn(p)}</div>`).join('')+'</div>'+(l.length>lim?`<button class="b s w" onclick="lim+=60;$('#pl').innerHTML=listHtml()">Mostrar mais (${l.length-lim})</button>`:'');
 };
 vLoja=function(){
   const n=count();
   return `${horBarra()}
-  <div class="srch"><input placeholder="Buscar produtos ou ler código de barras" value="${esc(q)}" onkeydown="if(event.key=='Enter')scanAdd()" oninput="q=this.value;lim=60;$('#pl').innerHTML=listHtml()">
+  <div class="srch"><input placeholder="Buscar produto, marca ou código de barras" value="${esc(q)}" onkeydown="if(event.key=='Enter')scanAdd()" oninput="q=this.value;lim=60;$('#pl').innerHTML=listHtml()">
   <select aria-label="Categoria" onchange="cat=this.value;lim=60;$('#pl').innerHTML=listHtml()"><option value="">Todos (${S.products.length})</option>${catList().map(([c,k])=>`<option value="${esc(c)}" ${cat==c?'selected':''}>${esc(c)} (${k})</option>`).join('')}</select>
   <select aria-label="Ordenar" onchange="ord=this.value;lim=60;$('#pl').innerHTML=listHtml()">${[['az','A-Z'],['za','Z-A'],['lo','Menor preço'],['hi','Maior preço']].map(([v,x])=>`<option value="${v}" ${ord==v?'selected':''}>Ordenar: ${x}</option>`).join('')}</select></div>
   <div id="pl">${listHtml()}</div>
