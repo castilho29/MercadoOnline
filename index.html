@@ -51,7 +51,7 @@ a{color:var(--ac)}
 #pv .ph{float:none;width:110px;height:110px;margin:4px 0}
 @media print{h1,nav,button,a.b,.noprint{display:none!important}body{background:#fff;color:#000;padding:0;font-size:13px}body.pr .card:not(.pp){display:none}.pp{break-inside:avoid;border:1px dashed #000;background:#fff;color:#000;margin-bottom:14px}.pp .mu,.pp a{color:#000}}
 .sh{display:flex;align-items:center;gap:12px;margin:4px 0 12px}.sh img{width:72px;height:72px;border-radius:50%}.sn{font:700 21px Georgia,serif}
-.srch{display:grid;grid-template-columns:1fr 1fr;gap:0 8px}.srch input{grid-column:1/-1}
+.srch{display:grid;grid-template-columns:1fr 1fr;gap:0 8px}.deps{display:flex;gap:8px;overflow-x:auto;padding:2px 0 10px;margin:0 0 4px;scrollbar-width:none}.deps::-webkit-scrollbar{display:none}.deps button{flex:none;display:flex;flex-direction:column;align-items:center;gap:2px;min-width:84px;max-width:110px;padding:8px 6px;border:1.5px solid var(--bd,#E2E7EE);border-radius:14px;background:var(--card,#fff);color:inherit;font:600 11.5px/1.15 inherit;text-align:center;cursor:pointer}.deps button span{font-size:24px}.deps button.on{border-color:var(--ac,#1E4FD8);background:var(--ac2,#EAF0FF);color:var(--ac,#1E4FD8)}.srch input{grid-column:1/-1}
 .pg{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-bottom:10px}
 .pcard{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:8px;display:flex;flex-direction:column;gap:4px}
 .pimg{aspect-ratio:1;border-radius:8px;background:#fff;display:flex;align-items:center;justify-content:center;font-size:40px;overflow:hidden}.pimg img{width:100%;height:100%;object-fit:contain}
@@ -478,20 +478,29 @@ function vMeus(){setTimeout(loadMeus,0);return '<h2>Meus pedidos</h2><div id="mp
 if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 
 /* ===== VITRINE (estilo catálogo) ===== */
-let cat='',ord='az',lim=60;
-const catList=()=>{const m={};S.products.forEach(p=>{const c=(p.c||'SEM CATEGORIA').toUpperCase();m[c]=(m[c]||0)+1});return Object.entries(m).sort((a,b)=>a[0].localeCompare(b[0],'pt-BR'))};
+let cat='',dep='',ord='az',lim=60;
+/* Departamento › Categoria: a estrutura vem dos ajustes da loja (EMP.tax) */
+const semC=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().trim();
+const depOf=p=>{if(p.dep)return String(p.dep).toUpperCase();const c=semC(p.c);if(c)for(const t of EMP.tax||[])if((t.c||[]).some(x=>semC(x)==c))return String(t.d).toUpperCase();return 'OUTROS'};
+const depList=()=>{const m={};S.products.forEach(p=>{const d=depOf(p);m[d]=(m[d]||0)+1});const o=(EMP.tax||[]).map(t=>String(t.d).toUpperCase()),ix=d=>{const i=o.indexOf(d);return i<0?999:i};return Object.entries(m).sort((a,b)=>ix(a[0])-ix(b[0])||a[0].localeCompare(b[0],'pt-BR'))};
+const DICO=[['MERCEARIA','🥫'],['MATINAIS','☕'],['DOCE','🍫'],['BEBIDA','🥤'],['FRIOS','🧀'],['LATIC','🧀'],['ACOUGUE','🥩'],['CARNE','🥩'],['HORTI','🥬'],['PADARIA','🥖'],['CONGELADO','🧊'],['LIMPEZA','🧽'],['HIGIENE','🧴'],['PERFUM','🧴'],['BAZAR','🧺'],['UTILIDADE','🧺'],['PET','🐾']];
+const dIco=d=>(DICO.find(([k])=>semC(d).includes(k))||['','🛒'])[1];
+const depVai=d=>{dep=dep==d?'':d;cat='';lim=60;render()};
+const catList=()=>{const m={};S.products.forEach(p=>{if(dep&&depOf(p)!=dep)return;const c=(p.c||'SEM CATEGORIA').toUpperCase();m[c]=(m[c]||0)+1});return Object.entries(m).sort((a,b)=>a[0].localeCompare(b[0],'pt-BR'))};
 const qtyBtn=p=>soldOut(p)?'<button class="b w" disabled>Indisponível</button>':S.cart[p.id]?`<div class="q" style="justify-content:center"><button onclick="add('${p.id}',-1)" aria-label="Menos">−</button><b>${S.cart[p.id]}</b><button onclick="add('${p.id}',1)" aria-label="Mais">+</button></div>`:`<button class="b w" onclick="add('${p.id}',1)">Adicionar</button>`;
 listHtml=function(){
-  const t=q.toLowerCase(),l=S.products.filter(p=>(!cat||(p.c||'SEM CATEGORIA').toUpperCase()==cat)&&(p.n+' '+(p.marca||'')+' '+(p.cod||'')+' '+(p.bar||'')).toLowerCase().includes(t));
+  const t=q.toLowerCase(),l=S.products.filter(p=>(!dep||depOf(p)==dep)&&(!cat||(p.c||'SEM CATEGORIA').toUpperCase()==cat)&&(p.n+' '+(p.marca||'')+' '+(p.cod||'')+' '+(p.bar||'')).toLowerCase().includes(t));
   l.sort((a,b)=>(soldOut(a)-soldOut(b))||(ord=='az'?a.n.localeCompare(b.n,'pt-BR'):ord=='za'?b.n.localeCompare(a.n,'pt-BR'):ord=='lo'?a.p-b.p:b.p-a.p));
   if(!l.length)return '<p class="mu">Nenhum produto encontrado.</p>';
   return '<div class="pg">'+l.slice(0,lim).map(p=>`<div class="pcard${soldOut(p)?' off':''}"><div class="pimg">${soldOut(p)?'<span class="sold">Indisponível</span>':''}${p.img?`<img alt="" src="${p.img}">`:'🛒'}</div><div class="pname">${esc(p.n)}</div>${p.marca?`<div class="mu" style="font-size:12.5px;font-weight:600">${esc(p.marca)}</div>`:''}${p.cod?`<div class="mu" style="font-size:12px">(Código ${esc(p.cod)})</div>`:''}<div class="pprice">${R(p.p)}<span class="mu" style="font:13px sans-serif"> / ${esc(p.u)}</span></div>${lowTag(p)}${qtyBtn(p)}</div>`).join('')+'</div>'+(l.length>lim?`<button class="b s w" onclick="lim+=60;$('#pl').innerHTML=listHtml()">Mostrar mais (${l.length-lim})</button>`:'');
 };
 vLoja=function(){
   const n=count();
+  const dl=depList();
   return `${horBarra()}
+  ${dl.length>1?`<div class="deps" role="tablist" aria-label="Departamentos"><button class="${dep?'':'on'}" onclick="depVai('')"><span>🛒</span>Tudo</button>${dl.map(([d,k])=>`<button class="${dep==d?'on':''}" onclick="depVai('${esc(d).replace(/'/g,"\\'")}')" title="${k} produtos"><span>${dIco(d)}</span>${esc(d.charAt(0)+d.slice(1).toLowerCase())}</button>`).join('')}</div>`:''}
   <div class="srch"><input placeholder="Buscar produto, marca ou código de barras" value="${esc(q)}" onkeydown="if(event.key=='Enter')scanAdd()" oninput="q=this.value;lim=60;$('#pl').innerHTML=listHtml()">
-  <select aria-label="Categoria" onchange="cat=this.value;lim=60;$('#pl').innerHTML=listHtml()"><option value="">Todos (${S.products.length})</option>${catList().map(([c,k])=>`<option value="${esc(c)}" ${cat==c?'selected':''}>${esc(c)} (${k})</option>`).join('')}</select>
+  <select aria-label="Categoria" onchange="cat=this.value;lim=60;$('#pl').innerHTML=listHtml()"><option value="">${dep?'Todas as categorias':'Todos'} (${dep?(dl.find(x=>x[0]==dep)||[0,0])[1]:S.products.length})</option>${catList().map(([c,k])=>`<option value="${esc(c)}" ${cat==c?'selected':''}>${esc(c)} (${k})</option>`).join('')}</select>
   <select aria-label="Ordenar" onchange="ord=this.value;lim=60;$('#pl').innerHTML=listHtml()">${[['az','A-Z'],['za','Z-A'],['lo','Menor preço'],['hi','Maior preço']].map(([v,x])=>`<option value="${v}" ${ord==v?'selected':''}>Ordenar: ${x}</option>`).join('')}</select></div>
   <div id="pl">${listHtml()}</div>
   
