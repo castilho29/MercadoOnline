@@ -147,8 +147,14 @@ iniciar();
 /* ===== instalar como app separado ===== */
 const soloApp=()=>matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
 let pedidoInst=null;
+/* aberto pelo próprio app de Entregas instalado? (o ícone abre com ?pwa=1) */
+let proprio=false;try{proprio=new URLSearchParams(location.search).has('pwa')||sessionStorage.getItem('mo-ent-pwa')=='1';if(proprio)sessionStorage.setItem('mo-ent-pwa','1')}catch(x){}
+const intentChrome=()=>'intent://'+location.host+location.pathname+location.hash+'#Intent;scheme=https;package=com.android.chrome;end';
 function instDesenha(){
   const e=$('#inst');if(!e)return;
+  if(soloApp()&&!proprio&&/android/i.test(navigator.userAgent)){
+    // abriu dentro da janela de outro app instalado (ex.: o app de compras): manda para o Chrome, onde dá para instalar o de Entregas separado
+    e.innerHTML=`<div class="inst"><img src="icon-192.png" alt=""><div><span class="t">Abriu dentro do app de compras?</span>Toque em <b>Abrir no Chrome</b> e depois em <b>Instalar</b>. O app de Entregas fica com ícone próprio, separado.</div><a class="b" href="${intentChrome()}">Abrir no Chrome</a></div>`;return}
   if(soloApp()){e.innerHTML='';return}
   let fechado=false;try{fechado=localStorage.getItem('mo-ent-inst')==String(new Date().toDateString())}catch(x){}if(fechado){e.innerHTML='';return}
   const ios=/iphone|ipad|ipod/i.test(navigator.userAgent);
